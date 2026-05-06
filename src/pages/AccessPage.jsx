@@ -13,6 +13,8 @@ import {
 } from '../utils/normalizers';
 
 const DEFAULT_GROUP_ID = '1';
+const EMPLOYEE_COLUMN_WIDTH = 200;
+const ACCESS_COLUMN_WIDTH = 112;
 
 export function AccessPage({ session }) {
   const companies = useMemo(
@@ -126,7 +128,7 @@ export function AccessPage({ session }) {
     });
   }, [departmentFilter, userSearch, users]);
   const tableRows = useMemo(() => buildDepartmentRows(filteredUsers, departments), [departments, filteredUsers]);
-  const tableWidth = 260 + accesses.length * 112;
+  const tableWidth = EMPLOYEE_COLUMN_WIDTH + accesses.length * ACCESS_COLUMN_WIDTH;
 
   const setHoveredAccess = (accessId) => {
     if (!hoverStyleRef.current) return;
@@ -187,7 +189,7 @@ export function AccessPage({ session }) {
       dataIndex: 'fullName',
       key: 'fullName',
       fixed: 'left',
-      width: 260,
+      width: EMPLOYEE_COLUMN_WIDTH,
       render: (name, record) => {
         if (record.rowType === 'department') {
           return <span className="department-row-title">{name}</span>;
@@ -215,7 +217,7 @@ export function AccessPage({ session }) {
       ),
       dataIndex: String(access.id),
       key: String(access.id),
-      width: 112,
+      width: ACCESS_COLUMN_WIDTH,
       align: 'center',
       onHeaderCell: () => ({
         'data-access-id': access.id,
@@ -333,6 +335,7 @@ export function AccessPage({ session }) {
             bordered
             size="middle"
             className="access-matrix"
+            style={{ '--access-table-width': `${tableWidth}px` }}
             rowKey={(record) => record.id}
             loading={loading || !groupsLoaded}
             columns={columns}

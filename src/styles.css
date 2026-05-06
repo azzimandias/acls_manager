@@ -367,6 +367,11 @@ body {
   width: 100%;
 }
 
+.access-matrix .ant-table-container table {
+  width: var(--access-table-width) !important;
+  min-width: var(--access-table-width) !important;
+}
+
 @media (max-width: 760px) {
   .topbar {
     height: auto;
