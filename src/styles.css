@@ -1,0 +1,398 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: #1d2433;
+  background: #f5f7fb;
+}
+
+.app-shell {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  padding: 0 22px;
+  line-height: 1;
+  border-bottom: 1px solid #e3e8f2;
+  box-shadow: 0 2px 12px rgba(34, 42, 58, 0.05);
+}
+
+.topbar__left {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  height: 100%;
+}
+
+.home-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin-right: 12px;
+  color: #1d2433;
+  border-radius: 6px;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease;
+}
+
+.home-link:hover {
+  color: #1f6feb;
+  background: #eef4ff;
+}
+
+.topbar__menu {
+  min-width: 280px;
+  height: 40px;
+  line-height: 40px;
+  border-bottom: 0;
+}
+
+.topbar__menu.ant-menu-horizontal {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  line-height: 40px;
+}
+
+.topbar__menu.ant-menu-horizontal > .ant-menu-item,
+.topbar__menu.ant-menu-horizontal > .ant-menu-submenu {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  margin: 0;
+  padding-inline: 14px;
+  line-height: 36px;
+  border-radius: 6px;
+}
+
+.topbar__menu.ant-menu-horizontal > .ant-menu-item::after,
+.topbar__menu.ant-menu-horizontal > .ant-menu-submenu::after {
+  inset-inline: 10px;
+  bottom: 0;
+}
+
+.topbar__menu .ant-menu-title-content {
+  line-height: 1;
+}
+
+.topbar__user {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: 32px;
+  margin-left: 16px;
+  padding: 2px 8px 2px 4px;
+  line-height: 1;
+  background: #f4f7fb;
+  border: 1px solid #dfe6f1;
+  border-radius: 6px;
+}
+
+.topbar__user.ant-space {
+  height: 32px;
+  line-height: 1;
+}
+
+.topbar__user .ant-space-item {
+  display: flex;
+  align-items: center;
+  line-height: 1;
+}
+
+.topbar__surname,
+.topbar__name {
+  line-height: 1;
+}
+
+.app-content {
+  height: calc(100vh - 52px);
+  padding: 10px 22px 22px;
+  overflow: hidden;
+}
+
+.page {
+  width: 100%;
+}
+
+.settings-page.ant-space {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.settings-page > .ant-space-item:last-child {
+  min-height: 0;
+}
+
+.settings-page .ant-table-wrapper {
+  height: 100%;
+}
+
+.settings-toolbar {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.page-header {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.page-header h2.ant-typography {
+  margin: 0 0 4px;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.page-header__extra {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.company-select {
+  width: 280px;
+}
+
+.access-layout {
+  display: flex;
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+}
+
+.access-page.ant-space {
+  min-width: 0;
+}
+
+.access-sider {
+  flex: 0 0 250px;
+  min-height: 0;
+  padding: 10px;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #dfe6f1;
+  border-radius: 8px;
+}
+
+.access-filters {
+  width: 100%;
+}
+
+.access-filters__title {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: #3d4a5c;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.access-filters .ant-select {
+  width: 100%;
+}
+
+.access-toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.access-toolbar__left {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.access-filter-button_active.ant-btn-primary {
+  background: #111827;
+  border-color: #111827;
+  box-shadow: none;
+}
+
+.access-filter-button_active.ant-btn-primary:hover {
+  background: #000000 !important;
+  border-color: #000000 !important;
+}
+
+.access-toolbar__divider {
+  align-self: stretch;
+  width: 1px;
+  min-height: 30px;
+  background: #d8e0ec;
+}
+
+.access-group-radio {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.access-group-radio .ant-radio-button-wrapper {
+  height: 30px;
+  border-inline-start-width: 1px;
+  border-radius: 6px;
+  line-height: 28px;
+}
+
+.access-group-radio .ant-radio-button-wrapper::before {
+  display: none;
+}
+
+.access-toolbar__company {
+  flex-shrink: 0;
+}
+
+.center-state {
+  display: grid;
+  min-height: calc(100vh - 120px);
+  place-items: center;
+}
+
+.employee-name {
+  display: block;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.access-column-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  cursor: help;
+  font-size: 11px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.access-column-title span:first-child {
+  overflow-wrap: anywhere;
+  white-space: normal;
+  word-break: normal;
+}
+
+.access-tooltip {
+  max-width: 360px;
+}
+
+.access-tooltip div + div {
+  margin-top: 4px;
+}
+
+.access-checkbox-cell .ant-checkbox-inner {
+  width: 20px;
+  height: 20px;
+}
+
+.access-checkbox-cell .ant-checkbox-inner::after {
+  width: 6px;
+  height: 10px;
+}
+
+.access-matrix .ant-table-thead > tr > th,
+.access-matrix .ant-table-tbody > tr > td {
+  padding: 6px 8px;
+}
+
+.access-matrix .ant-table-tbody > tr > td {
+  height: 36px;
+}
+
+.access-matrix .department-row > td {
+  position: sticky !important;
+  top: 0;
+  z-index: 3;
+  height: 30px;
+  padding: 5px 10px;
+  overflow: hidden;
+  background: #f0f3f8 !important;
+  border-top: 1px solid #d8e0ec;
+  border-bottom: 1px solid #d8e0ec;
+}
+
+.access-matrix .department-row > td:first-child {
+  z-index: 12;
+}
+
+.department-row-title {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: #3d4a5c;
+  font-size: 12px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.access-form {
+  padding-top: 10px;
+}
+
+.form-number {
+  width: 100%;
+}
+
+.ant-tabs-nav {
+  margin-bottom: 0 !important;
+}
+
+.ant-table-wrapper {
+  width: 100%;
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    height: auto;
+    min-height: 58px;
+    padding: 0 12px;
+  }
+
+  .topbar__menu {
+    min-width: 190px;
+  }
+
+  .topbar__surname,
+  .topbar__name {
+    display: none;
+  }
+
+  .app-content {
+    padding: 14px;
+  }
+
+  .page-header {
+    flex-direction: column;
+  }
+
+  .page-header__extra,
+  .company-select {
+    width: 100%;
+  }
+}
