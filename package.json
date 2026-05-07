@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "push-all-changes": "git add . && git commit -m\"update\" && git push origin",
+    "update": "git fetch origin && git reset --hard origin/master && npm run build"
   },
   "dependencies": {
     "@ant-design/icons": "^5.6.1",

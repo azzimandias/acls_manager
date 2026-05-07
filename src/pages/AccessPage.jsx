@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Button, Checkbox, Input, Radio, Select, Space, Table, Tooltip, message } from 'antd';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Button, Checkbox, Input, Radio, Select, Skeleton, Space, Table, Tooltip, message } from 'antd';
 import { FilterOutlined, MenuFoldOutlined, MenuUnfoldOutlined, SearchOutlined } from '@ant-design/icons';
 import { fetchAccessGroups, fetchAccessInfo, fetchCheckboxMatrix, fetchDepartments, updateCheckbox } from '../api/access';
 import {
@@ -40,6 +40,9 @@ export function AccessPage({ session }) {
   const [userSearch, setUserSearch] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState(null);
   const hoverStyleRef = useRef(null);
+  const deferredUserSearch = useDeferredValue(userSearch);
+  const hasActiveFilters = Boolean(userSearch.trim() || departmentFilter);
+  const isFilterButtonActive = filtersVisible || hasActiveFilters;
 
   useEffect(() => {
     setCompanyId(activeCompany);
@@ -114,7 +117,7 @@ export function AccessPage({ session }) {
 
   const users = useMemo(() => normalizeUsers(checkboxData || infoData, matrix), [checkboxData, infoData, matrix]);
   const filteredUsers = useMemo(() => {
-    const search = userSearch.trim().toLowerCase();
+    const search = deferredUserSearch.trim().toLowerCase();
 
     return users.filter((user) => {
       const matchesSearch =
@@ -126,7 +129,7 @@ export function AccessPage({ session }) {
 
       return matchesSearch && matchesDepartment;
     });
-  }, [departmentFilter, userSearch, users]);
+  }, [deferredUserSearch, departmentFilter, users]);
   const tableRows = useMemo(() => buildDepartmentRows(filteredUsers, departments), [departments, filteredUsers]);
   const tableWidth = EMPLOYEE_COLUMN_WIDTH + accesses.length * ACCESS_COLUMN_WIDTH;
 
@@ -140,7 +143,7 @@ export function AccessPage({ session }) {
 
     hoverStyleRef.current.textContent = `
       .access-matrix .ant-table-thead > tr > th[data-access-id="${accessId}"] {
-        background: #eef4ff !important;
+        background: #6686a7 !important;
       }
     `;
   };
@@ -195,7 +198,23 @@ export function AccessPage({ session }) {
           return <span className="department-row-title">{name}</span>;
         }
 
-        return <span className="employee-name">{name}</span>;
+        return (
+          <Tooltip
+            title={
+              <div className="access-tooltip">
+                <div>{[record.surname, record.name, record.secondname].filter(Boolean).join(' ') || record.fullName}</div>
+                <div>ID: {record.id}</div>
+                {record.occupy ? <div>Должность: {record.occupy}</div> : null}
+                {record.department ? <div>Отдел: {record.department}</div> : null}
+                {record.phone ? <div>Телефон: {record.phone}</div> : null}
+                {record.email ? <div>Email: {record.email}</div> : null}
+              </div>
+            }
+            placement="topLeft"
+          >
+            <span className="employee-name">{name}</span>
+          </Tooltip>
+        );
       },
     },
     ...accesses.map((access) => ({
@@ -300,11 +319,11 @@ export function AccessPage({ session }) {
           <div className="access-toolbar">
             <div className="access-toolbar__left">
               <Button
-                type={filtersVisible ? 'primary' : 'default'}
+                type={isFilterButtonActive ? 'primary' : 'default'}
                 icon={filtersVisible ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
                 onClick={() => setFiltersVisible((current) => !current)}
                 title={filtersVisible ? 'Скрыть фильтры' : 'Показать фильтры'}
-                className={filtersVisible ? 'access-filter-button_active' : ''}
+                className={isFilterButtonActive ? 'access-filter-button_active' : ''}
               />
               <div className="access-toolbar__divider" />
               <Radio.Group
@@ -331,23 +350,28 @@ export function AccessPage({ session }) {
 
           {error ? <Alert type="error" showIcon message={error} /> : null}
 
-          <Table
-            bordered
-            size="middle"
-            className="access-matrix"
-            style={{ '--access-table-width': `${tableWidth}px` }}
-            rowKey={(record) => record.id}
-            loading={loading || !groupsLoaded}
-            columns={columns}
-            dataSource={tableRows}
-            rowClassName={(record) => (record.rowType === 'department' ? 'department-row' : '')}
-            scroll={{ x: tableWidth, y: 'calc(100vh - 205px)' }}
-            tableLayout="fixed"
-            pagination={false}
-            locale={{
-              emptyText: 'Нет данных для выбранной компании и группы',
-            }}
-          />
+          {loading || !groupsLoaded ? (
+            <div className="access-table-skeleton">
+              <Skeleton active title={false} paragraph={{ rows: 14, width: '100%' }} />
+            </div>
+          ) : (
+            <Table
+              bordered
+              size="middle"
+              className="access-matrix"
+              style={{ '--access-table-width': `${tableWidth}px` }}
+              rowKey={(record) => record.id}
+              columns={columns}
+              dataSource={tableRows}
+              rowClassName={(record) => (record.rowType === 'department' ? 'department-row' : '')}
+              scroll={{ x: tableWidth, y: 'calc(100vh - 205px)' }}
+              tableLayout="fixed"
+              pagination={false}
+              locale={{
+                emptyText: 'Нет данных для выбранной компании и группы',
+              }}
+            />
+          )}
         </Space>
       </div>
     </>

@@ -80,6 +80,11 @@ export const normalizeUsers = (infoData, matrix) => {
       occupy: user.occupy || user.position || user.dept_name || user.department || '',
       departmentId: Number(user.id_departament ?? user.id_department ?? user.department_id),
       department: user.dept_name || user.department || user.departament || '',
+      surname: user.surname || '',
+      name: user.name || '',
+      secondname: user.secondname || '',
+      phone: user.phone || '',
+      email: user.email || '',
     });
   }
 

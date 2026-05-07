@@ -5,7 +5,7 @@
 body {
   margin: 0;
   color: #1d2433;
-  background: #f5f7fb;
+  background: #d8e3f287;
 }
 
 .app-shell {
@@ -121,6 +121,7 @@ body {
   height: calc(100vh - 52px);
   padding: 10px 22px 22px;
   overflow: hidden;
+  background: #d8e3f287;
 }
 
 .page {
@@ -279,6 +280,14 @@ body {
   white-space: nowrap;
 }
 
+.access-matrix .ant-table-tbody > tr:not(.department-row) > td:first-child {
+  background: #f7f3e8 !important;
+}
+
+.access-matrix .ant-table-tbody > tr:not(.department-row):hover > td:first-child {
+  background: #efe7d2 !important;
+}
+
 .access-column-title {
   display: flex;
   align-items: center;
@@ -330,9 +339,11 @@ body {
   height: 30px;
   padding: 5px 10px;
   overflow: hidden;
-  background: #f0f3f8 !important;
-  border-top: 1px solid #d8e0ec;
-  border-bottom: 1px solid #d8e0ec;
+  background: #d3deec !important;
+  border-top: 0 !important;
+  border-bottom-color: #9aa8ba !important;
+  border-inline-end: 0 !important;
+  border-left: 0 !important;
 }
 
 .access-matrix .department-row > td:first-child {
@@ -367,9 +378,53 @@ body {
   width: 100%;
 }
 
+.ant-table-wrapper .ant-table,
+.ant-table-wrapper .ant-table-container,
+.ant-table-wrapper .ant-table-cell {
+  border-color: #9aa8ba !important;
+}
+
+.ant-table-wrapper .ant-table-thead > tr > th,
+.ant-table-wrapper .ant-table-tbody > tr > td {
+  border-color: #9aa8ba !important;
+  border-inline-end-color: rgba(154, 168, 186, 0.36) !important;
+  border-left-color: rgba(154, 168, 186, 0.36) !important;
+}
+
+.ant-table-wrapper .ant-table-thead > tr > th {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  background: #587493 !important;
+  border-color: #405a76 !important;
+  border-bottom-color: #334b65 !important;
+  border-inline-end-color: rgba(64, 90, 118, 0.42) !important;
+  border-left-color: rgba(64, 90, 118, 0.42) !important;
+}
+
+.ant-table-wrapper .ant-table-thead > tr > th:first-child {
+  background: #4d6684 !important;
+}
+
+.access-matrix .ant-table-thead > tr > th[data-access-id]:hover {
+  background: #6686a7 !important;
+}
+
 .access-matrix .ant-table-container table {
   width: var(--access-table-width) !important;
   min-width: var(--access-table-width) !important;
+}
+
+.access-table-skeleton {
+  height: calc(100vh - 205px);
+  padding: 14px;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #9aa8ba;
+  border-radius: 4px;
+}
+
+.access-table-skeleton .ant-skeleton-paragraph > li {
+  height: 24px;
 }
 
 @media (max-width: 760px) {
