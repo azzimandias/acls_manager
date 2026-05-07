@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Checkbox, Input, Radio, Select, Skeleton, Space, Table, Tooltip, message } from 'antd';
 import { FilterOutlined, MenuFoldOutlined, MenuUnfoldOutlined, SearchOutlined } from '@ant-design/icons';
 import { fetchAccessGroups, fetchAccessInfo, fetchCheckboxMatrix, fetchDepartments, updateCheckbox } from '../api/access';
@@ -15,6 +15,28 @@ import {
 const DEFAULT_GROUP_ID = '1';
 const EMPLOYEE_COLUMN_WIDTH = 200;
 const ACCESS_COLUMN_WIDTH = 112;
+
+const UserSearchInput = memo(function UserSearchInput({ onDebouncedChange }) {
+  const [value, setValue] = useState('');
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      onDebouncedChange(value);
+    }, 350);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [onDebouncedChange, value]);
+
+  return (
+    <Input
+      allowClear
+      prefix={<SearchOutlined />}
+      placeholder="Пользователь"
+      value={value}
+      onChange={(event) => setValue(event.target.value)}
+    />
+  );
+});
 
 export function AccessPage({ session }) {
   const companies = useMemo(
@@ -40,7 +62,6 @@ export function AccessPage({ session }) {
   const [userSearch, setUserSearch] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState(null);
   const hoverStyleRef = useRef(null);
-  const deferredUserSearch = useDeferredValue(userSearch);
   const hasActiveFilters = Boolean(userSearch.trim() || departmentFilter);
   const isFilterButtonActive = filtersVisible || hasActiveFilters;
 
@@ -117,7 +138,7 @@ export function AccessPage({ session }) {
 
   const users = useMemo(() => normalizeUsers(checkboxData || infoData, matrix), [checkboxData, infoData, matrix]);
   const filteredUsers = useMemo(() => {
-    const search = deferredUserSearch.trim().toLowerCase();
+    const search = userSearch.trim().toLowerCase();
 
     return users.filter((user) => {
       const matchesSearch =
@@ -129,7 +150,7 @@ export function AccessPage({ session }) {
 
       return matchesSearch && matchesDepartment;
     });
-  }, [deferredUserSearch, departmentFilter, users]);
+  }, [departmentFilter, userSearch, users]);
   const tableRows = useMemo(() => buildDepartmentRows(filteredUsers, departments), [departments, filteredUsers]);
   const tableWidth = EMPLOYEE_COLUMN_WIDTH + accesses.length * ACCESS_COLUMN_WIDTH;
 
@@ -292,13 +313,7 @@ export function AccessPage({ session }) {
                 <FilterOutlined />
                 <span>Фильтры</span>
               </div>
-              <Input
-                allowClear
-                prefix={<SearchOutlined />}
-                placeholder="Пользователь"
-                value={userSearch}
-                onChange={(event) => setUserSearch(event.target.value)}
-              />
+              <UserSearchInput onDebouncedChange={setUserSearch} />
               <Select
                 allowClear
                 showSearch
