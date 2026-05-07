@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button, Form, Input, InputNumber, Modal, Pagination, Select, Space, Table, Tag, message } from 'antd';
-import { EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { EditOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { createAccess, fetchAccessGroups, fetchAccessInfo, updateAccess } from '../api/access';
 import { normalizeAccessGroups, normalizeAccesses } from '../utils/normalizers';
 
@@ -12,6 +12,8 @@ const getDefaultAccess = (groups) => ({
   position: 0,
 });
 
+const compareText = (a, b) => String(a || '').localeCompare(String(b || ''), 'ru');
+
 export function SettingsPage() {
   const [form] = Form.useForm();
   const [infoData, setInfoData] = useState(null);
@@ -20,6 +22,9 @@ export function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [tableFilters, setTableFilters] = useState({});
+  const [sorterState, setSorterState] = useState({ field: 'id', order: 'ascend' });
   const [pagination, setPagination] = useState({ current: 1, pageSize: 50 });
 
   const loadAccesses = async () => {
@@ -41,10 +46,57 @@ export function SettingsPage() {
 
   const groupById = useMemo(() => new Map(groups.map((group) => [Number(group.id), group])), [groups]);
   const accesses = useMemo(() => normalizeAccesses(infoData), [infoData]);
+
+  const preparedAccesses = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    const groupFilter = tableFilters.accessgroup || [];
+
+    const filtered = accesses.filter((access) => {
+      const groupLabel = groupById.get(Number(access.accessgroup))?.label || '';
+      const matchesSearch =
+        !query ||
+        [
+          access.id,
+          access.accessname,
+          access.name,
+          access.label,
+          access.accessgroup,
+          groupLabel,
+          access.position,
+        ]
+          .some((value) => String(value ?? '').toLowerCase().includes(query));
+      const matchesGroup =
+        !groupFilter.length || groupFilter.some((value) => Number(value) === Number(access.accessgroup));
+
+      return matchesSearch && matchesGroup;
+    });
+
+    const sorted = [...filtered];
+    const { field, order } = sorterState;
+
+    if (field && order) {
+      const direction = order === 'ascend' ? 1 : -1;
+
+      sorted.sort((a, b) => {
+        if (field === 'id' || field === 'position' || field === 'accessgroup') {
+          return (Number(a[field] ?? 0) - Number(b[field] ?? 0)) * direction;
+        }
+
+        if (field === 'groupLabel') {
+          return compareText(groupById.get(Number(a.accessgroup))?.label, groupById.get(Number(b.accessgroup))?.label) * direction;
+        }
+
+        return compareText(a[field], b[field]) * direction;
+      });
+    }
+
+    return sorted;
+  }, [accesses, groupById, search, sorterState, tableFilters]);
+
   const pagedAccesses = useMemo(() => {
     const start = (pagination.current - 1) * pagination.pageSize;
-    return accesses.slice(start, start + pagination.pageSize);
-  }, [accesses, pagination]);
+    return preparedAccesses.slice(start, start + pagination.pageSize);
+  }, [pagination, preparedAccesses]);
 
   const openCreate = () => {
     setEditing(null);
@@ -88,33 +140,70 @@ export function SettingsPage() {
     }
   };
 
+  const handleTableChange = (_, filters, sorter) => {
+    const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter;
+
+    setTableFilters(filters);
+    setSorterState({
+      field: activeSorter?.field || 'id',
+      order: activeSorter?.order || 'ascend',
+    });
+    setPagination((current) => ({ ...current, current: 1 }));
+  };
+
+  const handleSearchChange = (event) => {
+    setSearch(event.target.value);
+    setPagination((current) => ({ ...current, current: 1 }));
+  };
+
+  const sortOrder = (field) => (sorterState.field === field ? sorterState.order : null);
+
   const columns = [
-    { title: 'ID', dataIndex: 'id', width: 86, sorter: (a, b) => a.id - b.id },
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      width: 86,
+      sorter: true,
+      sortOrder: sortOrder('id'),
+    },
     {
       title: 'Краткое название',
       dataIndex: 'accessname',
       width: 220,
+      sorter: true,
+      sortOrder: sortOrder('accessname'),
       render: (value, record) => value || record.name,
     },
-    { title: 'Название', dataIndex: 'name', width: 220 },
+    {
+      title: 'Название',
+      dataIndex: 'name',
+      width: 220,
+      sorter: true,
+      sortOrder: sortOrder('name'),
+    },
     {
       title: 'Описание',
       dataIndex: 'label',
       ellipsis: true,
+      sorter: true,
+      sortOrder: sortOrder('label'),
     },
     {
       title: 'Группа',
       dataIndex: 'accessgroup',
       width: 180,
+      sorter: true,
+      sortOrder: sortOrder('accessgroup'),
       render: (value) => <Tag>{groupById.get(Number(value))?.label || value || 'Без группы'}</Tag>,
       filters: groups.map((group) => ({ text: group.label, value: group.id })),
-      onFilter: (value, record) => Number(record.accessgroup) === Number(value),
+      filteredValue: tableFilters.accessgroup || null,
     },
     {
       title: 'Позиция',
       dataIndex: 'position',
       width: 120,
-      sorter: (a, b) => a.position - b.position,
+      sorter: true,
+      sortOrder: sortOrder('position'),
     },
     {
       title: '',
@@ -133,13 +222,23 @@ export function SettingsPage() {
         <Pagination
           current={pagination.current}
           pageSize={pagination.pageSize}
-          total={accesses.length}
+          total={preparedAccesses.length}
           showSizeChanger
           onChange={(current, pageSize) => setPagination({ current, pageSize })}
         />
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-          Добавить
-        </Button>
+        <Space className="settings-toolbar__actions">
+          <Input
+            allowClear
+            prefix={<SearchOutlined />}
+            placeholder="Поиск"
+            value={search}
+            onChange={handleSearchChange}
+            className="settings-search"
+          />
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+            Добавить
+          </Button>
+        </Space>
       </div>
 
       <Table
@@ -148,6 +247,7 @@ export function SettingsPage() {
         loading={loading}
         columns={columns}
         dataSource={pagedAccesses}
+        onChange={handleTableChange}
         scroll={{ x: 1080, y: 'calc(100vh - 190px)' }}
         pagination={false}
       />

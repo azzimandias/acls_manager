@@ -1,11 +1,28 @@
-import { Avatar, Layout, Menu, Space, Typography } from 'antd';
-import { BankOutlined, HomeOutlined, SettingOutlined, SafetyCertificateOutlined, UserOutlined } from '@ant-design/icons';
-import { HOME_URL } from '../config';
+import { Avatar, Dropdown, Layout, Menu, Space, Typography } from 'antd';
+import {
+  BankOutlined,
+  HomeOutlined,
+  LoginOutlined,
+  SettingOutlined,
+  SafetyCertificateOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
+import { HOME_URL, HTTP_HOST } from '../config';
 
 const { Header } = Layout;
 
 export function AppTopbar({ currentPage, onPageChange, user }) {
-  const initials = [user?.surname?.[0], user?.name?.[0]].filter(Boolean).join('').toUpperCase();
+  const userMenuItems = [
+    {
+      key: 'status',
+      label: 'Статус: Онлайн',
+    },
+    {
+      key: `${HTTP_HOST}/logout`,
+      icon: <LoginOutlined />,
+      label: <a href={`${HTTP_HOST}/logout`}>Выйти</a>,
+    },
+  ];
 
   return (
     <Header className="topbar">
@@ -26,17 +43,19 @@ export function AppTopbar({ currentPage, onPageChange, user }) {
         />
       </div>
 
-      <Space size={10} className="topbar__user">
-        <Avatar size={26} icon={initials ? null : <UserOutlined />} style={{ backgroundColor: '#1f6feb' }}>
-          {initials}
-        </Avatar>
-        <Typography.Text strong className="topbar__surname">
-          {user?.surname || ''}
-        </Typography.Text>
-        <Typography.Text strong className="topbar__name">
-          {user?.name || ''}
-        </Typography.Text>
-      </Space>
+      <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" trigger={['hover']}>
+        <Space size={10} className="topbar__user">
+          <Avatar size={26} icon={<UserOutlined />} style={{ backgroundColor: '#1f6feb' }} />
+          <Space size={4} className="topbar__name-group">
+            <Typography.Text strong className="topbar__surname">
+              {user?.surname || ''}
+            </Typography.Text>
+            <Typography.Text strong className="topbar__name">
+              {user?.name || ''}
+            </Typography.Text>
+          </Space>
+        </Space>
+      </Dropdown>
     </Header>
   );
 }

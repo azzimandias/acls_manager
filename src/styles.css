@@ -96,6 +96,7 @@ body {
   margin-left: 16px;
   padding: 2px 8px 2px 4px;
   line-height: 1;
+  cursor: pointer;
   background: #f4f7fb;
   border: 1px solid #dfe6f1;
   border-radius: 6px;
@@ -115,6 +116,10 @@ body {
 .topbar__surname,
 .topbar__name {
   line-height: 1;
+}
+
+.topbar__name-group.ant-space {
+  gap: 4px !important;
 }
 
 .app-content {
@@ -148,6 +153,14 @@ body {
   gap: 16px;
   align-items: center;
   justify-content: space-between;
+}
+
+.settings-toolbar__actions {
+  flex-shrink: 0;
+}
+
+.settings-search {
+  width: 280px;
 }
 
 .page-header {
