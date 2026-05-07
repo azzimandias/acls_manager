@@ -21,7 +21,7 @@ export const fetchDepartments = async () => {
 };
 
 export const fetchCompanyStaffAccess = async () => {
-  const { data } = await PROD_AXIOS_INSTANCE.post('/api/admin/aclcompanies/data/getstaff');
+  const { data } = await PROD_AXIOS_INSTANCE.post('/api/admin/aclcompanies/data/v2/getstaff');
   return data;
 };
 
@@ -32,7 +32,7 @@ const getCsrfToken = () =>
     ?.split('=')[1] || '';
 
 export const setCompanyAccess = async ({ user, company, state }) => {
-  const { data } = await PROD_AXIOS_INSTANCE.post('/api/admin/aclcompanies/data/setaccess', {
+  const { data } = await PROD_AXIOS_INSTANCE.post('/api/admin/aclcompanies/data/v2/setaccess', {
     user: String(user),
     state: Boolean(state),
     company: String(company),
