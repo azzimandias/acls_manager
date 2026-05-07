@@ -195,6 +195,10 @@ body {
   border-radius: 8px;
 }
 
+.access-sider_hidden {
+  display: none;
+}
+
 .access-filters {
   width: 100%;
 }

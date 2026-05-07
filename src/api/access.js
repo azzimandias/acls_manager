@@ -20,6 +20,27 @@ export const fetchDepartments = async () => {
   return data;
 };
 
+export const fetchCompanyStaffAccess = async () => {
+  const { data } = await PROD_AXIOS_INSTANCE.post('/api/admin/aclcompanies/data/getstaff');
+  return data;
+};
+
+const getCsrfToken = () =>
+  document.cookie
+    .split('; ')
+    .find((row) => row.startsWith('XSRF-TOKEN='))
+    ?.split('=')[1] || '';
+
+export const setCompanyAccess = async ({ user, company, state }) => {
+  const { data } = await PROD_AXIOS_INSTANCE.post('/api/admin/aclcompanies/data/setaccess', {
+    user: String(user),
+    state: Boolean(state),
+    company: String(company),
+    _token: decodeURIComponent(getCsrfToken()),
+  });
+  return data;
+};
+
 export const fetchCheckboxMatrix = async ({ company, group }) => {
   const { data } = await PROD_AXIOS_INSTANCE.post('/api/admin/access/data/checkbox', {
     company,

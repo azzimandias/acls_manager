@@ -3,6 +3,7 @@ import { Alert, Layout, Spin } from 'antd';
 import { AppTopbar } from './components/AppTopbar';
 import { fetchSessionInfo } from './api/access';
 import { AccessPage } from './pages/AccessPage';
+import { CompaniesPage } from './pages/CompaniesPage';
 import { SettingsPage } from './pages/SettingsPage';
 
 const { Content } = Layout;
@@ -45,6 +46,8 @@ export default function App() {
           <Alert type="error" showIcon message="Ошибка загрузки" description={error} />
         ) : page === 'settings' ? (
           <SettingsPage />
+        ) : page === 'companies' ? (
+          <CompaniesPage />
         ) : (
           <AccessPage session={session} />
         )}

@@ -1,5 +1,5 @@
 import { Avatar, Layout, Menu, Space, Typography } from 'antd';
-import { HomeOutlined, SettingOutlined, SafetyCertificateOutlined, UserOutlined } from '@ant-design/icons';
+import { BankOutlined, HomeOutlined, SettingOutlined, SafetyCertificateOutlined, UserOutlined } from '@ant-design/icons';
 import { HOME_URL } from '../config';
 
 const { Header } = Layout;
@@ -20,6 +20,7 @@ export function AppTopbar({ currentPage, onPageChange, user }) {
           className="topbar__menu"
           items={[
             { key: 'access', icon: <SafetyCertificateOutlined />, label: 'Доступы' },
+            { key: 'companies', icon: <BankOutlined />, label: 'Компании' },
             { key: 'settings', icon: <SettingOutlined />, label: 'Настройки' },
           ]}
         />

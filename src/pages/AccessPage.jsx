@@ -306,29 +306,27 @@ export function AccessPage({ session }) {
     <>
       <style ref={hoverStyleRef} />
       <div className="access-layout">
-        {filtersVisible ? (
-          <aside className="access-sider">
-            <Space direction="vertical" size={12} className="access-filters">
-              <div className="access-filters__title">
-                <FilterOutlined />
-                <span>Фильтры</span>
-              </div>
-              <UserSearchInput onDebouncedChange={setUserSearch} />
-              <Select
-                allowClear
-                showSearch
-                placeholder="Отдел"
-                value={departmentFilter}
-                onChange={setDepartmentFilter}
-                optionFilterProp="label"
-                options={departments.map((department) => ({
-                  value: department.id,
-                  label: department.name,
-                }))}
-              />
-            </Space>
-          </aside>
-        ) : null}
+        <aside className={`access-sider ${filtersVisible ? '' : 'access-sider_hidden'}`}>
+          <Space direction="vertical" size={12} className="access-filters">
+            <div className="access-filters__title">
+              <FilterOutlined />
+              <span>Фильтры</span>
+            </div>
+            <UserSearchInput onDebouncedChange={setUserSearch} />
+            <Select
+              allowClear
+              showSearch
+              placeholder="Отдел"
+              value={departmentFilter}
+              onChange={setDepartmentFilter}
+              optionFilterProp="label"
+              options={departments.map((department) => ({
+                value: department.id,
+                label: department.name,
+              }))}
+            />
+          </Space>
+        </aside>
 
         <Space direction="vertical" size={18} className="page access-page">
           <div className="access-toolbar">
