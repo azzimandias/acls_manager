@@ -1,22 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button, Form, Input, InputNumber, Modal, Pagination, Select, Space, Table, Tag, message } from 'antd';
 import { EditOutlined, PlusOutlined } from '@ant-design/icons';
-import { createAccess, fetchAccessInfo, updateAccess } from '../api/access';
-import { ACCESS_GROUPS } from '../constants';
-import { normalizeAccesses } from '../utils/normalizers';
+import { createAccess, fetchAccessGroups, fetchAccessInfo, updateAccess } from '../api/access';
+import { normalizeAccessGroups, normalizeAccesses } from '../utils/normalizers';
 
-const emptyAccess = {
+const getDefaultAccess = (groups) => ({
   name: '',
   label: '',
-  accessgroup: undefined,
+  accessgroup: groups[0]?.id,
   accessname: '',
   position: 0,
-  group: ACCESS_GROUPS[0].key,
-};
+});
 
 export function SettingsPage() {
   const [form] = Form.useForm();
   const [infoData, setInfoData] = useState(null);
+  const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -26,7 +25,9 @@ export function SettingsPage() {
   const loadAccesses = async () => {
     setLoading(true);
     try {
-      setInfoData(await fetchAccessInfo());
+      const [accessInfo, groupsData] = await Promise.all([fetchAccessInfo(), fetchAccessGroups()]);
+      setInfoData(accessInfo);
+      setGroups(normalizeAccessGroups(groupsData));
     } catch (err) {
       message.error(err.message || 'Не удалось загрузить доступы');
     } finally {
@@ -38,6 +39,7 @@ export function SettingsPage() {
     loadAccesses();
   }, []);
 
+  const groupById = useMemo(() => new Map(groups.map((group) => [Number(group.id), group])), [groups]);
   const accesses = useMemo(() => normalizeAccesses(infoData), [infoData]);
   const pagedAccesses = useMemo(() => {
     const start = (pagination.current - 1) * pagination.pageSize;
@@ -46,26 +48,34 @@ export function SettingsPage() {
 
   const openCreate = () => {
     setEditing(null);
-    form.setFieldsValue(emptyAccess);
+    form.setFieldsValue(getDefaultAccess(groups));
     setModalOpen(true);
   };
 
   const openEdit = (record) => {
     setEditing(record);
-    form.setFieldsValue(record);
+    form.setFieldsValue({
+      ...record,
+      accessgroup: Number(record.accessgroup),
+    });
     setModalOpen(true);
   };
 
   const handleSubmit = async () => {
     const values = await form.validateFields();
+    const payload = {
+      ...values,
+      accessgroup: Number(values.accessgroup),
+    };
+
     setSaving(true);
 
     try {
       if (editing) {
-        await updateAccess(editing.id, values);
+        await updateAccess(editing.id, payload);
         message.success('Доступ обновлен');
       } else {
-        await createAccess(values);
+        await createAccess(payload);
         message.success('Доступ создан');
       }
 
@@ -94,14 +104,11 @@ export function SettingsPage() {
     },
     {
       title: 'Группа',
-      dataIndex: 'group',
+      dataIndex: 'accessgroup',
       width: 180,
-      render: (value, record) => {
-        const group = ACCESS_GROUPS.find((item) => item.key === value);
-        return <Tag>{group?.label || value || record.accessgroup || 'Без группы'}</Tag>;
-      },
-      filters: ACCESS_GROUPS.map((item) => ({ text: item.label, value: item.key })),
-      onFilter: (value, record) => record.group === value,
+      render: (value) => <Tag>{groupById.get(Number(value))?.label || value || 'Без группы'}</Tag>,
+      filters: groups.map((group) => ({ text: group.label, value: group.id })),
+      onFilter: (value, record) => Number(record.accessgroup) === Number(value),
     },
     {
       title: 'Позиция',
@@ -173,11 +180,8 @@ export function SettingsPage() {
           <Form.Item name="label" label="Описание">
             <Input.TextArea rows={4} />
           </Form.Item>
-          <Form.Item name="group" label="Группа">
-            <Select options={ACCESS_GROUPS.map((item) => ({ value: item.key, label: item.label }))} />
-          </Form.Item>
-          <Form.Item name="accessgroup" label="ID группы">
-            <InputNumber min={0} className="form-number" />
+          <Form.Item name="accessgroup" label="Группа" rules={[{ required: true, message: 'Выберите группу' }]}>
+            <Select options={groups.map((group) => ({ value: group.id, label: group.label }))} />
           </Form.Item>
           <Form.Item name="position" label="Позиция">
             <InputNumber min={0} className="form-number" />
