@@ -1,6 +1,6 @@
 import { memo, useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Checkbox, Input, Select, Skeleton, Space, Table, Tooltip, message } from 'antd';
-import { FilterOutlined, MenuFoldOutlined, MenuUnfoldOutlined, SearchOutlined } from '@ant-design/icons';
+import { FilterOutlined, SearchOutlined } from '@ant-design/icons';
 import { fetchCompanyStaffAccess, fetchDepartments, setCompanyAccess } from '../api/access';
 import { TableHeaderText } from '../components/TableHeaderText';
 import { buildDepartmentRows, normalizeDepartments } from '../utils/normalizers';
@@ -282,11 +282,14 @@ export function CompaniesPage() {
           <div className="access-toolbar__left">
             <Button
               type={isFilterButtonActive ? 'primary' : 'default'}
-              icon={filtersVisible ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
+              size="small"
+              icon={<FilterOutlined />}
               onClick={() => setFiltersVisible((current) => !current)}
               title={filtersVisible ? 'Скрыть фильтры' : 'Показать фильтры'}
-              className={isFilterButtonActive ? 'access-filter-button_active' : ''}
-            />
+              className={`access-filter-button ${isFilterButtonActive ? 'access-filter-button_active' : ''}`}
+            >
+              Фильтры
+            </Button>
             <div className="access-toolbar__divider" />
           </div>
         </div>

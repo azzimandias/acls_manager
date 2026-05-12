@@ -220,6 +220,7 @@ export function SettingsPage() {
     <Space direction="vertical" size={18} className="page settings-page">
       <div className="settings-toolbar">
         <Pagination
+          size="small"
           current={pagination.current}
           pageSize={pagination.pageSize}
           total={preparedAccesses.length}
@@ -233,9 +234,10 @@ export function SettingsPage() {
             placeholder="Поиск"
             value={search}
             onChange={handleSearchChange}
+            size="small"
             className="settings-search"
           />
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+          <Button type="primary" size="small" icon={<PlusOutlined />} onClick={openCreate}>
             Добавить
           </Button>
         </Space>
@@ -249,7 +251,7 @@ export function SettingsPage() {
         columns={columns}
         dataSource={pagedAccesses}
         onChange={handleTableChange}
-        scroll={{ x: 1080, y: '100%' }}
+        scroll={{ x: 1080, y: 'calc(100vh - 168px)' }}
         pagination={false}
       />
 

@@ -191,14 +191,12 @@ export function AccessPage({ session }) {
   const companyTextColor = getContrastColor(companyColor);
 
   const users = useMemo(() => normalizeUsers(checkboxData || infoData, matrix), [checkboxData, infoData, matrix]);
-  const hasCompanyUserLinks = useMemo(() => users.some((user) => user.companyIds?.length), [users]);
   const filteredUsers = useMemo(() => {
     const search = userSearch.trim().toLowerCase();
 
     return users.filter((user) => {
       const matchesCompany =
         showAllUsers ||
-        !hasCompanyUserLinks ||
         user.companyIds?.some((userCompanyId) => Number(userCompanyId) === Number(companyId));
       const matchesSearch =
         !search ||
@@ -209,7 +207,7 @@ export function AccessPage({ session }) {
 
       return matchesCompany && matchesSearch && matchesDepartment;
     });
-  }, [companyId, departmentFilter, hasCompanyUserLinks, showAllUsers, userSearch, users]);
+  }, [companyId, departmentFilter, showAllUsers, userSearch, users]);
   const tableRows = useMemo(() => buildDepartmentRows(filteredUsers, departments), [departments, filteredUsers]);
   const tableWidth = EMPLOYEE_COLUMN_WIDTH + accesses.length * ACCESS_COLUMN_WIDTH;
 
