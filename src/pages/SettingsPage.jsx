@@ -243,12 +243,13 @@ export function SettingsPage() {
 
       <Table
         bordered
+        size="small"
         rowKey="id"
         loading={loading}
         columns={columns}
         dataSource={pagedAccesses}
         onChange={handleTableChange}
-        scroll={{ x: 1080, y: 'calc(100vh - 190px)' }}
+        scroll={{ x: 1080, y: '100%' }}
         pagination={false}
       />
 

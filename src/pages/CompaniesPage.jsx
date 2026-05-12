@@ -2,10 +2,11 @@ import { memo, useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Checkbox, Input, Select, Skeleton, Space, Table, Tooltip, message } from 'antd';
 import { FilterOutlined, MenuFoldOutlined, MenuUnfoldOutlined, SearchOutlined } from '@ant-design/icons';
 import { fetchCompanyStaffAccess, fetchDepartments, setCompanyAccess } from '../api/access';
+import { TableHeaderText } from '../components/TableHeaderText';
 import { buildDepartmentRows, normalizeDepartments } from '../utils/normalizers';
 
-const EMPLOYEE_COLUMN_WIDTH = 200;
-const COMPANY_COLUMN_WIDTH = 112;
+const EMPLOYEE_COLUMN_WIDTH = 170;
+const COMPANY_COLUMN_WIDTH = 82;
 
 const UserSearchInput = memo(function UserSearchInput({ onDebouncedChange }) {
   const [value, setValue] = useState('');
@@ -214,7 +215,9 @@ export function CompaniesPage() {
       title: (
         <Tooltip title={`ID: ${company.id}`} placement="top">
           <div className="access-column-title">
-            <span>{company.name}</span>
+            <span>
+              <TableHeaderText>{company.name}</TableHeaderText>
+            </span>
           </div>
         </Tooltip>
       ),
@@ -297,14 +300,14 @@ export function CompaniesPage() {
         ) : (
           <Table
             bordered
-            size="middle"
+            size="small"
             className="access-matrix"
             style={{ '--access-table-width': `${tableWidth}px` }}
             rowKey={(record) => record.id}
             columns={columns}
             dataSource={tableRows}
             rowClassName={(record) => (record.rowType === 'department' ? 'department-row' : '')}
-            scroll={{ x: tableWidth, y: 'calc(100vh - 205px)' }}
+            scroll={{ x: tableWidth, y: '100%' }}
             tableLayout="fixed"
             pagination={false}
             locale={{

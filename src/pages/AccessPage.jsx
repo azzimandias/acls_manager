@@ -1,7 +1,8 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Checkbox, Input, Radio, Select, Skeleton, Space, Table, Tooltip, message } from 'antd';
-import { FilterOutlined, MenuFoldOutlined, MenuUnfoldOutlined, SearchOutlined } from '@ant-design/icons';
+import { FilterOutlined, SearchOutlined } from '@ant-design/icons';
 import { fetchAccessGroups, fetchAccessInfo, fetchCheckboxMatrix, fetchDepartments, updateCheckbox } from '../api/access';
+import { TableHeaderText } from '../components/TableHeaderText';
 import {
   buildDepartmentRows,
   filterAccessesByGroup,
@@ -13,8 +14,54 @@ import {
 } from '../utils/normalizers';
 
 const DEFAULT_GROUP_ID = '1';
-const EMPLOYEE_COLUMN_WIDTH = 200;
-const ACCESS_COLUMN_WIDTH = 112;
+const EMPLOYEE_COLUMN_WIDTH = 170;
+const ACCESS_COLUMN_WIDTH = 82;
+
+const COLOR_FIELDS = [
+  'color',
+  'colour',
+  'brandColor',
+  'brand_color',
+  'corporateColor',
+  'corporate_color',
+  'mainColor',
+  'main_color',
+  'hexColor',
+  'hex_color',
+];
+
+const normalizeColor = (value) => {
+  const color = String(value || '').trim();
+
+  if (/^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(color)) return color;
+  if (/^[0-9a-f]{6}$/i.test(color)) return `#${color}`;
+
+  return '';
+};
+
+const getCompanyColor = (company) => {
+  for (const field of COLOR_FIELDS) {
+    const color = normalizeColor(company?.[field]);
+    if (color) return color;
+  }
+
+  return '';
+};
+
+const getContrastColor = (color) => {
+  const normalized = normalizeColor(color);
+  if (!normalized) return '#1d2433';
+
+  const hex = normalized.length === 4
+    ? normalized.slice(1).split('').map((char) => char + char).join('')
+    : normalized.slice(1);
+  const red = parseInt(hex.slice(0, 2), 16);
+  const green = parseInt(hex.slice(2, 4), 16);
+  const blue = parseInt(hex.slice(4, 6), 16);
+  const brightness = (red * 299 + green * 587 + blue * 114) / 1000;
+
+  return brightness > 150 ? '#1d2433' : '#ffffff';
+};
 
 const UserSearchInput = memo(function UserSearchInput({ onDebouncedChange }) {
   const [value, setValue] = useState('');
@@ -61,6 +108,7 @@ export function AccessPage({ session }) {
   const [filtersVisible, setFiltersVisible] = useState(false);
   const [userSearch, setUserSearch] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState(null);
+  const [showAllUsers, setShowAllUsers] = useState(false);
   const hoverStyleRef = useRef(null);
   const hasActiveFilters = Boolean(userSearch.trim() || departmentFilter);
   const isFilterButtonActive = filtersVisible || hasActiveFilters;
@@ -135,12 +183,23 @@ export function AccessPage({ session }) {
     const fallback = normalizeAccesses(selectedCompany?.places || []);
     return filterAccessesByGroup(fromCheckbox.length ? fromCheckbox : fromInfo.length ? fromInfo : fallback, group);
   }, [checkboxData, companies, companyId, group, infoData]);
+  const selectedCompany = useMemo(
+    () => companies.find((company) => Number(company.id) === Number(companyId)),
+    [companies, companyId],
+  );
+  const companyColor = getCompanyColor(selectedCompany);
+  const companyTextColor = getContrastColor(companyColor);
 
   const users = useMemo(() => normalizeUsers(checkboxData || infoData, matrix), [checkboxData, infoData, matrix]);
+  const hasCompanyUserLinks = useMemo(() => users.some((user) => user.companyIds?.length), [users]);
   const filteredUsers = useMemo(() => {
     const search = userSearch.trim().toLowerCase();
 
     return users.filter((user) => {
+      const matchesCompany =
+        showAllUsers ||
+        !hasCompanyUserLinks ||
+        user.companyIds?.some((userCompanyId) => Number(userCompanyId) === Number(companyId));
       const matchesSearch =
         !search ||
         user.fullName.toLowerCase().includes(search) ||
@@ -148,9 +207,9 @@ export function AccessPage({ session }) {
       const matchesDepartment =
         !departmentFilter || String(user.departmentId) === String(departmentFilter);
 
-      return matchesSearch && matchesDepartment;
+      return matchesCompany && matchesSearch && matchesDepartment;
     });
-  }, [departmentFilter, userSearch, users]);
+  }, [companyId, departmentFilter, hasCompanyUserLinks, showAllUsers, userSearch, users]);
   const tableRows = useMemo(() => buildDepartmentRows(filteredUsers, departments), [departments, filteredUsers]);
   const tableWidth = EMPLOYEE_COLUMN_WIDTH + accesses.length * ACCESS_COLUMN_WIDTH;
 
@@ -251,7 +310,9 @@ export function AccessPage({ session }) {
           placement="top"
         >
           <div className="access-column-title">
-            <span>{access.accessname || access.name}</span>
+            <span>
+              <TableHeaderText>{access.accessname || access.name}</TableHeaderText>
+            </span>
           </div>
         </Tooltip>
       ),
@@ -333,11 +394,14 @@ export function AccessPage({ session }) {
             <div className="access-toolbar__left">
               <Button
                 type={isFilterButtonActive ? 'primary' : 'default'}
-                icon={filtersVisible ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
+                size="small"
+                icon={<FilterOutlined />}
                 onClick={() => setFiltersVisible((current) => !current)}
                 title={filtersVisible ? 'Скрыть фильтры' : 'Показать фильтры'}
-                className={isFilterButtonActive ? 'access-filter-button_active' : ''}
-              />
+                className={`access-filter-button ${isFilterButtonActive ? 'access-filter-button_active' : ''}`}
+              >
+                Фильтры
+              </Button>
               <div className="access-toolbar__divider" />
               <Radio.Group
                 optionType="button"
@@ -349,10 +413,22 @@ export function AccessPage({ session }) {
               />
             </div>
             <div className="access-toolbar__company">
+              <Checkbox
+                checked={showAllUsers}
+                onChange={(event) => setShowAllUsers(event.target.checked)}
+                className="company-show-all"
+              >
+                Показать всех
+              </Checkbox>
               <Select
                 value={companyId}
                 onChange={setCompanyId}
-                className="company-select"
+                size="small"
+                className={`company-select ${companyColor ? 'company-select_colored' : ''}`}
+                style={{
+                  '--company-color': companyColor,
+                  '--company-text-color': companyTextColor,
+                }}
                 options={companies.map((company) => ({
                   value: company.id,
                   label: company.name,
@@ -370,14 +446,14 @@ export function AccessPage({ session }) {
           ) : (
             <Table
               bordered
-              size="middle"
+              size="small"
               className="access-matrix"
               style={{ '--access-table-width': `${tableWidth}px` }}
               rowKey={(record) => record.id}
               columns={columns}
               dataSource={tableRows}
               rowClassName={(record) => (record.rowType === 'department' ? 'department-row' : '')}
-              scroll={{ x: tableWidth, y: 'calc(100vh - 205px)' }}
+              scroll={{ x: tableWidth, y: '100%' }}
               tableLayout="fixed"
               pagination={false}
               locale={{

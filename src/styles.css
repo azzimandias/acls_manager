@@ -124,7 +124,7 @@ body {
 
 .app-content {
   height: calc(100vh - 52px);
-  padding: 10px 22px 22px;
+  padding: 10px 22px 0;
   overflow: hidden;
   background: #d8e3f287;
 }
@@ -135,17 +135,22 @@ body {
 
 .settings-page.ant-space {
   display: flex;
+  flex-direction: column;
   height: 100%;
   min-height: 0;
   overflow: hidden;
 }
 
 .settings-page > .ant-space-item:last-child {
+  display: flex;
+  flex: 1 1 auto;
   min-height: 0;
+  overflow: hidden;
 }
 
 .settings-page .ant-table-wrapper {
   height: 100%;
+  min-height: 0;
 }
 
 .settings-toolbar {
@@ -183,7 +188,7 @@ body {
 }
 
 .company-select {
-  width: 280px;
+  width: 220px;
 }
 
 .access-layout {
@@ -195,7 +200,25 @@ body {
 }
 
 .access-page.ant-space {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
   min-width: 0;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.access-page > .ant-space-item:last-child {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.access-page > .ant-space-item:not(:last-child),
+.settings-page > .ant-space-item:not(:last-child) {
+  flex: 0 0 auto;
 }
 
 .access-sider {
@@ -243,6 +266,17 @@ body {
   min-width: 0;
 }
 
+.access-filter-button.ant-btn {
+  height: 24px;
+  padding: 0 8px;
+  font-size: 12px;
+  line-height: 22px;
+}
+
+.access-filter-button.ant-btn .ant-btn-icon {
+  line-height: 1;
+}
+
 .access-filter-button_active.ant-btn-primary {
   background: #111827;
   border-color: #111827;
@@ -264,23 +298,87 @@ body {
 .access-group-radio {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
 }
 
 .access-group-radio .ant-radio-button-wrapper {
-  height: 30px;
+  height: 24px;
+  padding-inline: 8px;
+  color: #2f3b4d;
+  font-size: 12px;
   border-inline-start-width: 1px;
+  border-color: #c8d2df;
   border-radius: 6px;
-  line-height: 28px;
+  line-height: 22px;
+  background: #edf3f9;
+  box-shadow: none;
 }
 
 .access-group-radio .ant-radio-button-wrapper::before {
   display: none;
 }
 
+.access-group-radio .ant-radio-button-wrapper:hover {
+  color: #1f4f83;
+  background: #e1ebf6;
+  border-color: #aebfd3;
+}
+
+.access-group-radio .ant-radio-button-wrapper-checked {
+  color: #ffffff;
+  background: #587493;
+  border-color: #405a76;
+}
+
+.access-group-radio .ant-radio-button-wrapper-checked:hover {
+  color: #ffffff;
+  background: #6686a7;
+  border-color: #4f6f90;
+}
+
 .access-toolbar__company {
+  display: flex;
+  gap: 8px;
+  align-items: center;
   flex-shrink: 0;
+}
+
+.access-toolbar__company .ant-select-selector {
+  font-size: 12px;
+}
+
+.company-select_colored .ant-select-selector {
+  color: var(--company-text-color) !important;
+  background: var(--company-color) !important;
+  border-color: var(--company-color) !important;
+}
+
+.company-select_colored .ant-select-selection-item,
+.company-select_colored .ant-select-arrow {
+  color: var(--company-text-color) !important;
+}
+
+.company-select_colored.ant-select-focused .ant-select-selector,
+.company-select_colored:hover .ant-select-selector {
+  border-color: var(--company-color) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--company-color) 24%, transparent) !important;
+}
+
+.company-show-all {
+  color: #2f3b4d;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.company-show-all .ant-checkbox-inner {
+  width: 14px;
+  height: 14px;
+}
+
+.company-show-all .ant-checkbox-inner::after {
+  width: 4px;
+  height: 7px;
 }
 
 .center-state {
@@ -311,8 +409,8 @@ body {
   justify-content: center;
   min-width: 0;
   cursor: help;
-  font-size: 11px;
-  line-height: 1.2;
+  font-size: 10px;
+  line-height: 1.12;
   text-align: center;
 }
 
@@ -331,30 +429,30 @@ body {
 }
 
 .access-checkbox-cell .ant-checkbox-inner {
-  width: 20px;
-  height: 20px;
+  width: 15px;
+  height: 15px;
 }
 
 .access-checkbox-cell .ant-checkbox-inner::after {
-  width: 6px;
-  height: 10px;
+  width: 5px;
+  height: 8px;
 }
 
 .access-matrix .ant-table-thead > tr > th,
 .access-matrix .ant-table-tbody > tr > td {
-  padding: 6px 8px;
+  padding: 3px 4px;
 }
 
 .access-matrix .ant-table-tbody > tr > td {
-  height: 36px;
+  height: 28px;
 }
 
 .access-matrix .department-row > td {
   position: sticky !important;
   top: 0;
   z-index: 3;
-  height: 30px;
-  padding: 5px 10px;
+  height: 24px;
+  padding: 3px 8px;
   overflow: hidden;
   background: #d3deec !important;
   border-top: 0 !important;
@@ -372,7 +470,7 @@ body {
   max-width: 100%;
   overflow: hidden;
   color: #3d4a5c;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   text-overflow: ellipsis;
   text-transform: uppercase;
@@ -395,14 +493,65 @@ body {
   width: 100%;
 }
 
+.settings-page .ant-table-wrapper,
+.access-page .ant-table-wrapper {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.settings-page .ant-spin-nested-loading,
+.settings-page .ant-spin-container,
+.access-page .ant-spin-nested-loading,
+.access-page .ant-spin-container {
+  height: 100%;
+  min-height: 0;
+}
+
+.settings-page .ant-table,
+.settings-page .ant-table-container,
+.access-page .ant-table,
+.access-page .ant-table-container {
+  height: 100%;
+  min-height: 0;
+}
+
+.settings-page .ant-table,
+.access-page .ant-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-page .ant-table-container,
+.access-page .ant-table-container {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+.settings-page .ant-table-header,
+.access-page .ant-table-header {
+  flex: 0 0 auto;
+}
+
+.settings-page .ant-table-body,
+.access-page .ant-table-body {
+  flex: 1 1 0;
+  height: auto !important;
+  min-height: 0;
+  max-height: none !important;
+}
+
 .ant-table-wrapper .ant-table,
 .ant-table-wrapper .ant-table-container,
 .ant-table-wrapper .ant-table-cell {
   border-color: #9aa8ba !important;
+  font-size: 12px;
+  line-height: 1.25;
 }
 
 .ant-table-wrapper .ant-table-thead > tr > th,
 .ant-table-wrapper .ant-table-tbody > tr > td {
+  padding: 4px 6px !important;
   border-color: #9aa8ba !important;
   border-inline-end-color: rgba(154, 168, 186, 0.36) !important;
   border-left-color: rgba(154, 168, 186, 0.36) !important;
@@ -422,6 +571,15 @@ body {
   background: #4d6684 !important;
 }
 
+.ant-table-wrapper.access-matrix .ant-table-thead > tr > th,
+.ant-table-wrapper.access-matrix .ant-table-tbody > tr > td {
+  padding: 3px 4px !important;
+}
+
+.ant-table-wrapper.access-matrix .ant-table-tbody > tr > td {
+  height: 28px;
+}
+
 .access-matrix .ant-table-thead > tr > th[data-access-id]:hover {
   background: #6686a7 !important;
 }
@@ -432,7 +590,9 @@ body {
 }
 
 .access-table-skeleton {
-  height: calc(100vh - 205px);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
   padding: 14px;
   overflow: hidden;
   background: #ffffff;
@@ -461,7 +621,7 @@ body {
   }
 
   .app-content {
-    padding: 14px;
+    padding: 14px 14px 0;
   }
 
   .page-header {

@@ -14,6 +14,31 @@ const pickArray = (data, keys) => {
 
 const normalizeText = (value) => String(value || '').replace(/&nbsp;/g, ' ').replace(/\u00a0/g, ' ').trim();
 
+const normalizeCompanyIds = (user) => {
+  const ids = [
+    user.id_company,
+    user.company_id,
+    user.company,
+    user.active_company,
+    user.idCompany,
+    user.companyId,
+  ];
+
+  [user.companies, user.company_ids, user.companyIds].forEach((companies) => {
+    if (!Array.isArray(companies)) return;
+
+    companies.forEach((company) => {
+      ids.push(typeof company === 'object' ? company.id : company);
+    });
+  });
+
+  if (user.company && typeof user.company === 'object') {
+    ids.push(user.company.id);
+  }
+
+  return [...new Set(ids.map(Number).filter(Number.isFinite))];
+};
+
 export const normalizeAccesses = (data) => {
   const source = pickArray(data, ['accesses', 'resources', 'places', 'data', 'items', 'acls']);
 
@@ -85,6 +110,7 @@ export const normalizeUsers = (infoData, matrix) => {
       secondname: user.secondname || '',
       phone: user.phone || '',
       email: user.email || '',
+      companyIds: normalizeCompanyIds(user),
     });
   }
 
@@ -97,6 +123,7 @@ export const normalizeUsers = (infoData, matrix) => {
           occupy: '',
           departmentId: Number.NaN,
           department: '',
+          companyIds: [],
         });
       }
     });
