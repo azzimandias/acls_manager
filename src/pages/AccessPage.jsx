@@ -1,7 +1,15 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Checkbox, Input, Radio, Select, Skeleton, Space, Table, Tooltip, message } from 'antd';
 import { FilterOutlined, SearchOutlined } from '@ant-design/icons';
-import { fetchAccessGroups, fetchAccessInfo, fetchCheckboxMatrix, fetchDepartments, updateCheckbox } from '../api/access';
+import {
+  fetchAccessGroups,
+  fetchAccessInfo,
+  fetchCheckboxMatrix,
+  fetchDepartments,
+  fetchUserbaseInfoSelects,
+  updateBoss,
+  updateCheckbox,
+} from '../api/access';
 import { TableHeaderText } from '../components/TableHeaderText';
 import {
   buildDepartmentRows,
@@ -16,6 +24,7 @@ import {
 const DEFAULT_GROUP_ID = '1';
 const EMPLOYEE_COLUMN_WIDTH = 170;
 const ACCESS_COLUMN_WIDTH = 82;
+const BOSS_COLUMN_WIDTH = 190;
 
 const COLOR_FIELDS = [
   'color',
@@ -63,6 +72,27 @@ const getContrastColor = (color) => {
   return brightness > 150 ? '#1d2433' : '#ffffff';
 };
 
+const isSkudGroup = (group) => {
+  const value = `${group?.label || ''} ${group?.name || ''}`.toLowerCase();
+  return value.includes('скуд') || value.includes('skud');
+};
+
+const normalizeBossOptions = (data) => {
+  const bosses = Array.isArray(data?.content?.bosses)
+    ? data.content.bosses
+    : Array.isArray(data?.bosses)
+      ? data.bosses
+      : [];
+
+  return bosses
+    .map((boss) => ({
+      value: Number(boss.id),
+      label: String(boss.name || `ID ${boss.id}`).trim(),
+    }))
+    .filter((boss) => Number.isFinite(boss.value))
+    .sort((a, b) => a.label.localeCompare(b.label, 'ru') || a.value - b.value);
+};
+
 const UserSearchInput = memo(function UserSearchInput({ onDebouncedChange }) {
   const [value, setValue] = useState('');
 
@@ -104,6 +134,10 @@ export function AccessPage({ session }) {
   const [matrix, setMatrix] = useState({});
   const [loading, setLoading] = useState(false);
   const [savingKey, setSavingKey] = useState('');
+  const [savingBossUserId, setSavingBossUserId] = useState(null);
+  const [bossOptions, setBossOptions] = useState([]);
+  const [bossesLoading, setBossesLoading] = useState(false);
+  const [bossByUser, setBossByUser] = useState({});
   const [error, setError] = useState('');
   const [filtersVisible, setFiltersVisible] = useState(false);
   const [userSearch, setUserSearch] = useState('');
@@ -176,6 +210,36 @@ export function AccessPage({ session }) {
     };
   }, [companyId, group, groupsLoaded]);
 
+  const selectedGroup = useMemo(
+    () => accessGroups.find((item) => String(item.id) === String(group)),
+    [accessGroups, group],
+  );
+  const isSkudSelected = isSkudGroup(selectedGroup);
+
+  useEffect(() => {
+    if (!isSkudSelected || bossOptions.length) return;
+    let ignore = false;
+
+    const loadBosses = async () => {
+      setBossesLoading(true);
+      try {
+        const data = await fetchUserbaseInfoSelects();
+        if (!ignore) {
+          setBossOptions(normalizeBossOptions(data));
+        }
+      } catch (err) {
+        if (!ignore) message.error(err.message || 'Не удалось загрузить список руководителей');
+      } finally {
+        if (!ignore) setBossesLoading(false);
+      }
+    };
+
+    loadBosses();
+    return () => {
+      ignore = true;
+    };
+  }, [bossOptions.length, isSkudSelected]);
+
   const accesses = useMemo(() => {
     const fromCheckbox = normalizeAccesses(checkboxData);
     const fromInfo = normalizeAccesses(infoData);
@@ -209,7 +273,7 @@ export function AccessPage({ session }) {
     });
   }, [companyId, departmentFilter, showAllUsers, userSearch, users]);
   const tableRows = useMemo(() => buildDepartmentRows(filteredUsers, departments), [departments, filteredUsers]);
-  const tableWidth = EMPLOYEE_COLUMN_WIDTH + accesses.length * ACCESS_COLUMN_WIDTH;
+  const tableWidth = EMPLOYEE_COLUMN_WIDTH + accesses.length * ACCESS_COLUMN_WIDTH + (isSkudSelected ? BOSS_COLUMN_WIDTH : 0);
 
   const setHoveredAccess = (accessId) => {
     if (!hoverStyleRef.current) return;
@@ -261,6 +325,39 @@ export function AccessPage({ session }) {
       message.error(err.message || 'Не удалось сохранить доступ');
     } finally {
       setSavingKey('');
+    }
+  };
+
+  const handleBossChange = async (userId, bossId) => {
+    const previous = bossByUser[userId];
+
+    setSavingBossUserId(userId);
+    setBossByUser((current) => ({
+      ...current,
+      [userId]: bossId,
+    }));
+
+    try {
+      const result = await updateBoss({ userId, bossId });
+
+      if (result?.success === false || result?.status === false) {
+        throw new Error(result?.message || 'Бекенд не подтвердил изменение руководителя');
+      }
+    } catch (err) {
+      setBossByUser((current) => {
+        const next = { ...current };
+
+        if (previous === undefined) {
+          delete next[userId];
+        } else {
+          next[userId] = previous;
+        }
+
+        return next;
+      });
+      message.error(err.message || 'Не удалось сохранить руководителя');
+    } finally {
+      setSavingBossUserId(null);
     }
   };
 
@@ -359,6 +456,38 @@ export function AccessPage({ session }) {
         );
       },
     })),
+    ...(isSkudSelected
+      ? [
+          {
+            title: 'Руководитель',
+            key: 'boss',
+            width: BOSS_COLUMN_WIDTH,
+            render: (_, record) => {
+              if (record.rowType === 'department') {
+                return null;
+              }
+
+              const normalizedBossId = Number(record.bossId);
+              const value = bossByUser[record.id] ?? (Number.isFinite(normalizedBossId) ? normalizedBossId : undefined);
+
+              return (
+                <Select
+                  showSearch
+                  size="small"
+                  value={value}
+                  loading={bossesLoading}
+                  disabled={bossesLoading || savingBossUserId === record.id}
+                  options={bossOptions}
+                  optionFilterProp="label"
+                  placeholder="Руководитель"
+                  className="boss-select"
+                  onChange={(bossId) => handleBossChange(record.id, bossId)}
+                />
+              );
+            },
+          },
+        ]
+      : []),
   ];
 
   return (

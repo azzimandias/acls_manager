@@ -385,6 +385,14 @@ body {
   height: 7px;
 }
 
+.boss-select {
+  width: 100%;
+}
+
+.boss-select .ant-select-selector {
+  font-size: 12px;
+}
+
 .center-state {
   display: grid;
   min-height: calc(100vh - 120px);

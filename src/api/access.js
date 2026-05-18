@@ -20,6 +20,11 @@ export const fetchDepartments = async () => {
   return data;
 };
 
+export const fetchUserbaseInfoSelects = async () => {
+  const { data } = await PROD_AXIOS_INSTANCE.post('/api/hr/userbaseinfoselects');
+  return data;
+};
+
 export const fetchCompanyStaffAccess = async () => {
   const { data } = await PROD_AXIOS_INSTANCE.post('/api/admin/aclcompanies/data/v2/getstaff');
   return data;
@@ -59,6 +64,15 @@ export const updateCheckbox = async ({ resource, userid, checkbox, company }) =>
       company: String(company),
     }),
   );
+  return data;
+};
+
+export const updateBoss = async ({ userId, bossId }) => {
+  const formData = new FormData();
+  formData.append('select_id', String(bossId));
+  formData.append('user_id', String(userId));
+
+  const { data } = await PROD_AXIOS_INSTANCE.post('/admin/access/data/updateboss', formData);
   return data;
 };
 

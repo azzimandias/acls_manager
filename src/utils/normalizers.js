@@ -39,6 +39,11 @@ const normalizeCompanyIds = (user) => {
   return [...new Set(ids.map(Number).filter(Number.isFinite))];
 };
 
+const normalizeBossId = (user) => {
+  const bossId = Number(user.id_boss ?? user.boss_id ?? user.chief_id ?? user.manager_id ?? user.boss);
+  return Number.isFinite(bossId) && bossId > 0 ? bossId : undefined;
+};
+
 export const normalizeAccesses = (data) => {
   const source = pickArray(data, ['accesses', 'resources', 'places', 'data', 'items', 'acls']);
 
@@ -111,6 +116,7 @@ export const normalizeUsers = (infoData, matrix) => {
       phone: user.phone || '',
       email: user.email || '',
       companyIds: normalizeCompanyIds(user),
+      bossId: normalizeBossId(user),
     });
   }
 
@@ -124,6 +130,7 @@ export const normalizeUsers = (infoData, matrix) => {
           departmentId: Number.NaN,
           department: '',
           companyIds: [],
+          bossId: undefined,
         });
       }
     });
