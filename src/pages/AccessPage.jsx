@@ -245,7 +245,9 @@ export function AccessPage({ session }) {
     const fromInfo = normalizeAccesses(infoData);
     const selectedCompany = companies.find((company) => Number(company.id) === Number(companyId));
     const fallback = normalizeAccesses(selectedCompany?.places || []);
-    return filterAccessesByGroup(fromCheckbox.length ? fromCheckbox : fromInfo.length ? fromInfo : fallback, group);
+    return filterAccessesByGroup(fromCheckbox.length ? fromCheckbox : fromInfo.length ? fromInfo : fallback, group)
+      .slice()
+      .sort((a, b) => Number(a.position ?? 0) - Number(b.position ?? 0) || Number(a.id) - Number(b.id));
   }, [checkboxData, companies, companyId, group, infoData]);
   const selectedCompany = useMemo(
     () => companies.find((company) => Number(company.id) === Number(companyId)),

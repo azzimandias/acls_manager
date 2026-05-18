@@ -45,7 +45,7 @@ const normalizeBossId = (user) => {
 };
 
 export const normalizeAccesses = (data) => {
-  const source = pickArray(data, ['accesses', 'resources', 'places', 'data', 'items', 'acls']);
+  const source = pickArray(data, ['accesses', 'resources', 'resourses', 'places', 'data', 'items', 'acls']);
 
   return source
     .filter((item) => item && typeof item === 'object')
@@ -218,5 +218,7 @@ export const filterAccessesByGroup = (accesses, group) => {
     return value === group || value.includes(group);
   });
 
-  return filtered.length ? filtered : accesses;
+  return (filtered.length ? filtered : accesses)
+    .slice()
+    .sort((a, b) => Number(a.position ?? 0) - Number(b.position ?? 0) || Number(a.id) - Number(b.id));
 };
