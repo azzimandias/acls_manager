@@ -117,6 +117,7 @@ export const normalizeUsers = (infoData, matrix) => {
       email: user.email || '',
       companyIds: normalizeCompanyIds(user),
       bossId: normalizeBossId(user),
+      isFired: Number(user.is_fired) === 1,
     });
   }
 

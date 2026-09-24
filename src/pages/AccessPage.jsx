@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { Alert, Button, Checkbox, Input, Radio, Select, Skeleton, Space, Table, Tooltip, message } from 'antd';
 import { FilterOutlined, SearchOutlined } from '@ant-design/icons';
 import {
@@ -143,6 +143,18 @@ export function AccessPage({ session }) {
   const [userSearch, setUserSearch] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState(null);
   const [showAllUsers, setShowAllUsers] = useState(false);
+  const [showFiredUsers, setShowFiredUsers] = useState(false);
+  const [filtersUpdating, startFilterTransition] = useTransition();
+
+  const handleUserVisibilityChange = (setVisibility, checked) => {
+    startFilterTransition(async () => {
+      // Let the browser paint the loader before rendering the updated matrix.
+      await new Promise((resolve) => {
+        window.requestAnimationFrame(() => window.requestAnimationFrame(resolve));
+      });
+      startFilterTransition(() => setVisibility(checked));
+    });
+  };
   const hoverStyleRef = useRef(null);
   const hasActiveFilters = Boolean(userSearch.trim() || departmentFilter);
   const isFilterButtonActive = filtersVisible || hasActiveFilters;
@@ -271,11 +283,12 @@ export function AccessPage({ session }) {
       const matchesDepartment =
         !departmentFilter || String(user.departmentId) === String(departmentFilter);
 
-      return matchesCompany && matchesSearch && matchesDepartment;
+      return (showFiredUsers || !user.isFired) && matchesCompany && matchesSearch && matchesDepartment;
     });
-  }, [companyId, departmentFilter, showAllUsers, userSearch, users]);
+  }, [companyId, departmentFilter, showAllUsers, showFiredUsers, userSearch, users]);
   const tableRows = useMemo(() => buildDepartmentRows(filteredUsers, departments), [departments, filteredUsers]);
-  const tableWidth = EMPLOYEE_COLUMN_WIDTH + accesses.length * ACCESS_COLUMN_WIDTH + (isSkudSelected ? BOSS_COLUMN_WIDTH : 0);
+  const employeeColumnWidth = showFiredUsers ? 240 : EMPLOYEE_COLUMN_WIDTH;
+  const tableWidth = employeeColumnWidth + accesses.length * ACCESS_COLUMN_WIDTH + (isSkudSelected ? BOSS_COLUMN_WIDTH : 0);
 
   const setHoveredAccess = (accessId) => {
     if (!hoverStyleRef.current) return;
@@ -369,7 +382,7 @@ export function AccessPage({ session }) {
       dataIndex: 'fullName',
       key: 'fullName',
       fixed: 'left',
-      width: EMPLOYEE_COLUMN_WIDTH,
+      width: employeeColumnWidth,
       render: (name, record) => {
         if (record.rowType === 'department') {
           return <span className="department-row-title">{name}</span>;
@@ -381,6 +394,7 @@ export function AccessPage({ session }) {
               <div className="access-tooltip">
                 <div>{[record.surname, record.name, record.secondname].filter(Boolean).join(' ') || record.fullName}</div>
                 <div>ID: {record.id}</div>
+                {record.isFired ? <div>Статус: Уволен</div> : null}
                 {record.occupy ? <div>Должность: {record.occupy}</div> : null}
                 {record.department ? <div>Отдел: {record.department}</div> : null}
                 {record.phone ? <div>Телефон: {record.phone}</div> : null}
@@ -389,7 +403,10 @@ export function AccessPage({ session }) {
             }
             placement="topLeft"
           >
-            <span className="employee-name">{name}</span>
+            <span className="employee-cell">
+              <span className="employee-name">{name}</span>
+              {record.isFired ? <span className="employee-fired-label">Уволен</span> : null}
+            </span>
           </Tooltip>
         );
       },
@@ -544,10 +561,19 @@ export function AccessPage({ session }) {
             <div className="access-toolbar__company">
               <Checkbox
                 checked={showAllUsers}
-                onChange={(event) => setShowAllUsers(event.target.checked)}
+                disabled={filtersUpdating}
+                onChange={(event) => handleUserVisibilityChange(setShowAllUsers, event.target.checked)}
                 className="company-show-all"
               >
                 Показать всех
+              </Checkbox>
+              <Checkbox
+                checked={showFiredUsers}
+                disabled={filtersUpdating}
+                onChange={(event) => handleUserVisibilityChange(setShowFiredUsers, event.target.checked)}
+                className="company-show-all"
+              >
+                Показать уволенных
               </Checkbox>
               <Select
                 value={companyId}
@@ -577,6 +603,7 @@ export function AccessPage({ session }) {
               bordered
               size="small"
               className="access-matrix"
+              loading={{ spinning: filtersUpdating, tip: 'Обновление списка…' }}
               style={{ '--access-table-width': `${tableWidth}px` }}
               rowKey={(record) => record.id}
               columns={columns}

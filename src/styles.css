@@ -258,6 +258,7 @@ body {
 
 .access-toolbar {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   align-items: flex-start;
   justify-content: space-between;
@@ -343,6 +344,8 @@ body {
 
 .access-toolbar__company {
   display: flex;
+  flex-wrap: wrap;
+  max-width: 100%;
   gap: 8px;
   align-items: center;
   flex-shrink: 0;
@@ -397,6 +400,30 @@ body {
   display: grid;
   min-height: calc(100vh - 120px);
   place-items: center;
+}
+
+.employee-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.employee-cell .employee-name {
+  min-width: 0;
+}
+
+.employee-fired-label {
+  display: inline-block;
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: 1px 5px;
+  color: #a8071a;
+  font-size: 10px;
+  font-weight: 600;
+  background: #fff1f0;
+  border: 1px solid #ffa39e;
+  border-radius: 4px;
 }
 
 .employee-name {
