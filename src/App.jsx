@@ -5,6 +5,7 @@ import { fetchSessionInfo } from './api/access';
 import { AccessPage } from './pages/AccessPage';
 import { CompaniesPage } from './pages/CompaniesPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { HistoryPage } from './pages/HistoryPage';
 
 const { Content } = Layout;
 
@@ -46,6 +47,8 @@ export default function App() {
           <Alert type="error" showIcon message="Ошибка загрузки" description={error} />
         ) : page === 'settings' ? (
           <SettingsPage />
+        ) : page === 'history' ? (
+          <HistoryPage />
         ) : page === 'companies' ? (
           <CompaniesPage />
         ) : (

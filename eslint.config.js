@@ -14,6 +14,9 @@ export default [
         window: 'readonly',
         console: 'readonly',
         URLSearchParams: 'readonly',
+        fetch: 'readonly',
+        AbortController: 'readonly',
+        FormData: 'readonly',
       },
       parserOptions: {
         ecmaVersion: 'latest',

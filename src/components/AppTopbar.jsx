@@ -2,6 +2,7 @@ import { Avatar, Dropdown, Layout, Menu, Space, Typography } from 'antd';
 import {
   BankOutlined,
   HomeOutlined,
+  HistoryOutlined,
   LoginOutlined,
   SettingOutlined,
   SafetyCertificateOutlined,
@@ -38,6 +39,7 @@ export function AppTopbar({ currentPage, onPageChange, user }) {
           items={[
             { key: 'access', icon: <SafetyCertificateOutlined />, label: 'Доступы' },
             { key: 'companies', icon: <BankOutlined />, label: 'Компании' },
+            { key: 'history', icon: <HistoryOutlined />, label: 'История' },
             { key: 'settings', icon: <SettingOutlined />, label: 'Настройки' },
           ]}
         />

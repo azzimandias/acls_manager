@@ -133,6 +133,40 @@ body {
   width: 100%;
 }
 
+.history-page {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  gap: 14px;
+  height: 100%;
+  overflow: auto;
+  padding-bottom: 14px;
+}
+
+.history-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.history-sider {
+  overflow-y: auto;
+}
+
+.history-filters .ant-form-item {
+  margin-bottom: 0;
+}
+
+.history-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .settings-page.ant-space {
   display: flex;
   flex-direction: column;

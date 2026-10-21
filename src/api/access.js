@@ -1,4 +1,32 @@
 import { PROD_AXIOS_INSTANCE } from './axios';
+import { HTTP_HOST } from '../config';
+
+export const fetchAccessChanges = async (params, signal) => {
+  const payload = Object.fromEntries(
+    Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== ''),
+  );
+  const response = await fetch(`${HTTP_HOST}/api/admin/access/data/changes`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(payload),
+    signal,
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    const messages = {
+      401: 'Просмотр истории доступен только администраторам.',
+      403: 'Авторизация не пройдена. Войдите в систему повторно.',
+      422: 'Некорректные параметры фильтрации.',
+    };
+    const details = response.status === 422 && data?.errors
+      ? Object.values(data.errors).flat().join(' ')
+      : '';
+    throw new Error([messages[response.status] || 'Не удалось загрузить историю.', details].filter(Boolean).join(' '));
+  }
+  if (!Array.isArray(data?.data)) throw new Error('Сервер вернул некорректный журнал изменений.');
+  return data;
+};
 
 export const fetchSessionInfo = async () => {
   const { data } = await PROD_AXIOS_INSTANCE.get('/api/usda');
