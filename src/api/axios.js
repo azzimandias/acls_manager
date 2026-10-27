@@ -12,7 +12,7 @@ export const PROD_AXIOS_INSTANCE = axios.create({
 });
 
 const handleAuthError = (status) => {
-  if ([401, 403, 419].includes(status)) {
+  if ([401, 419].includes(status)) {
     console.log('Auth/session error:', status);
 
     document.cookie.split(';').forEach((cookie) => {
