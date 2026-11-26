@@ -1,34 +1,16 @@
-import { memo, useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Checkbox, Input, Select, Skeleton, Space, Table, Tooltip, message } from 'antd';
-import { FilterOutlined, SearchOutlined } from '@ant-design/icons';
+import { useEffect, useMemo, useState } from 'react';
+import { Alert, Button, Checkbox, Select, Table, Tooltip, message } from 'antd';
+import { FilterOutlined } from '@ant-design/icons';
 import { fetchCompanyStaffAccess, fetchDepartments, setCompanyAccess } from '../api/access';
+import { FiltersPanel } from '../components/FiltersPanel';
 import { TableHeaderText } from '../components/TableHeaderText';
+import { TableSkeleton } from '../components/TableSkeleton';
+import { UserSearchInput } from '../components/UserSearchInput';
+import { parsePositiveInteger } from '../routing';
 import { buildDepartmentRows, normalizeDepartments } from '../utils/normalizers';
 
 const EMPLOYEE_COLUMN_WIDTH = 170;
 const COMPANY_COLUMN_WIDTH = 82;
-
-const UserSearchInput = memo(function UserSearchInput({ onDebouncedChange }) {
-  const [value, setValue] = useState('');
-
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      onDebouncedChange(value);
-    }, 350);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [onDebouncedChange, value]);
-
-  return (
-    <Input
-      allowClear
-      prefix={<SearchOutlined />}
-      placeholder="Пользователь"
-      value={value}
-      onChange={(event) => setValue(event.target.value)}
-    />
-  );
-});
 
 const getDetailedName = (user) => [user.surname, user.name, user.secondname].filter(Boolean).join(' ') || user.fullName;
 
@@ -79,10 +61,10 @@ const normalizeCompanyMatrix = (users) =>
     return matrix;
   }, {});
 
-export function CompaniesPage() {
-  const [filtersVisible, setFiltersVisible] = useState(false);
-  const [userSearch, setUserSearch] = useState('');
-  const [departmentFilter, setDepartmentFilter] = useState(null);
+export function CompaniesPage({ searchParams, updateSearch }) {
+  const userSearch = searchParams.get('q') ?? '';
+  const departmentFilter = parsePositiveInteger(searchParams.get('department'));
+  const [filtersVisible, setFiltersVisible] = useState(() => Boolean(userSearch || departmentFilter));
   const [departments, setDepartments] = useState([]);
   const [users, setUsers] = useState([]);
   const [companies, setCompanies] = useState([]);
@@ -91,8 +73,6 @@ export function CompaniesPage() {
   const [savingKey, setSavingKey] = useState('');
   const [error, setError] = useState('');
 
-  const hasActiveFilters = Boolean(userSearch.trim() || departmentFilter);
-  const isFilterButtonActive = filtersVisible || hasActiveFilters;
   const tableWidth = EMPLOYEE_COLUMN_WIDTH + companies.length * COMPANY_COLUMN_WIDTH;
 
   useEffect(() => {
@@ -185,6 +165,7 @@ export function CompaniesPage() {
       title: 'Сотрудник',
       dataIndex: 'fullName',
       key: 'fullName',
+      className: 'employee-column',
       fixed: 'left',
       width: EMPLOYEE_COLUMN_WIDTH,
       render: (name, record) => {
@@ -213,7 +194,7 @@ export function CompaniesPage() {
     },
     ...companies.map((company) => ({
       title: (
-        <Tooltip title={`ID: ${company.id}`} placement="top">
+        <Tooltip title={`${company.name} (ID: ${company.id})`} placement="top">
           <div className="access-column-title">
             <span>
               <TableHeaderText>{company.name}</TableHeaderText>
@@ -254,71 +235,71 @@ export function CompaniesPage() {
   ];
 
   return (
-    <div className="access-layout">
-      <aside className={`access-sider ${filtersVisible ? '' : 'access-sider_hidden'}`}>
-        <Space direction="vertical" size={12} className="access-filters">
-          <div className="access-filters__title">
-            <FilterOutlined />
-            <span>Фильтры</span>
-          </div>
-          <UserSearchInput onDebouncedChange={setUserSearch} />
-          <Select
-            allowClear
-            showSearch
-            placeholder="Отдел"
-            value={departmentFilter}
-            onChange={setDepartmentFilter}
-            optionFilterProp="label"
-            options={departments.map((department) => ({
-              value: department.id,
-              label: department.name,
-            }))}
-          />
-        </Space>
-      </aside>
-
-      <Space direction="vertical" size={18} className="page access-page">
-        <div className="access-toolbar">
-          <div className="access-toolbar__left">
-            <Button
-              type={isFilterButtonActive ? 'primary' : 'default'}
-              size="small"
-              icon={<FilterOutlined />}
-              onClick={() => setFiltersVisible((current) => !current)}
-              title={filtersVisible ? 'Скрыть фильтры' : 'Показать фильтры'}
-              className={`access-filter-button ${isFilterButtonActive ? 'access-filter-button_active' : ''}`}
-            >
-              Фильтры
-            </Button>
-            <div className="access-toolbar__divider" />
-          </div>
-        </div>
-
-        {error ? <Alert type="error" showIcon message={error} /> : null}
-
-        {loading ? (
-          <div className="access-table-skeleton">
-            <Skeleton active title={false} paragraph={{ rows: 14, width: '100%' }} />
-          </div>
-        ) : (
-          <Table
-            bordered
+    <section className="access-workspace">
+      <div className="access-toolbar ui-pagebar ui-pagebar--filters">
+        <div className="access-toolbar__left">
+          <Button
+            type={filtersVisible ? 'primary' : 'default'}
             size="small"
-            className="access-matrix"
-            style={{ '--access-table-width': `${tableWidth}px` }}
-            rowKey={(record) => record.id}
-            columns={columns}
-            dataSource={tableRows}
-            rowClassName={(record) => (record.rowType === 'department' ? 'department-row' : '')}
-            scroll={{ x: tableWidth, y: '100%' }}
-            tableLayout="fixed"
-            pagination={false}
-            locale={{
-              emptyText: 'Нет данных по доступам к компаниям',
-            }}
-          />
-        )}
-      </Space>
-    </div>
+            icon={<FilterOutlined />}
+            onClick={() => setFiltersVisible((current) => !current)}
+            title={filtersVisible ? 'Скрыть фильтры' : 'Показать фильтры'}
+            aria-label="Фильтры"
+            aria-expanded={filtersVisible}
+            aria-controls="companies-filters"
+            className="access-filter-button"
+          >
+            <span className="access-filter-button__label">Фильтры</span>
+          </Button>
+        </div>
+      </div>
+      {error ? <Alert type="error" showIcon message={error} /> : null}
+      <div className="access-layout">
+        <FiltersPanel id="companies-filters" title="Фильтры компаний" visible={filtersVisible}>
+          <div className="access-filter-field">
+            <label htmlFor="companies-filter-user">Пользователь</label>
+            <UserSearchInput id="companies-filter-user" value={userSearch} updateSearch={updateSearch} />
+          </div>
+          <div className="access-filter-field">
+            <label htmlFor="companies-filter-department">Отдел</label>
+            <Select
+              id="companies-filter-department"
+              allowClear
+              showSearch
+              placeholder="Отдел, где работает сотрудник"
+              value={departmentFilter}
+              onChange={(value) => updateSearch({ department: value })}
+              optionFilterProp="label"
+              options={departments.map((department) => ({
+                value: department.id,
+                label: department.name,
+              }))}
+            />
+          </div>
+        </FiltersPanel>
+        <div className="page-table">
+          {loading ? (
+            <TableSkeleton columns={columns} matrixColumnWidth={COMPANY_COLUMN_WIDTH} />
+          ) : (
+            <Table
+              bordered
+              size="small"
+              className="access-matrix"
+              style={{ '--access-table-width': `${tableWidth}px` }}
+              rowKey={(record) => record.id}
+              columns={columns}
+              dataSource={tableRows}
+              rowClassName={(record) => (record.rowType === 'department' ? 'department-row' : '')}
+              scroll={{ x: tableWidth, y: '100%' }}
+              tableLayout="fixed"
+              pagination={false}
+              locale={{
+                emptyText: 'Нет данных по доступам к компаниям',
+              }}
+            />
+          )}
+        </div>
+      </div>
+    </section>
   );
 }

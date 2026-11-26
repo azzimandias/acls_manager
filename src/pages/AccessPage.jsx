@@ -1,6 +1,6 @@
-import { memo, useEffect, useMemo, useRef, useState, useTransition } from 'react';
-import { Alert, Button, Checkbox, Input, Radio, Select, Skeleton, Space, Table, Tooltip, message } from 'antd';
-import { FilterOutlined, SearchOutlined } from '@ant-design/icons';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { Alert, Button, Checkbox, Radio, Select, Table, Tooltip, message } from 'antd';
+import { FilterOutlined } from '@ant-design/icons';
 import {
   fetchAccessGroups,
   fetchAccessInfo,
@@ -10,7 +10,11 @@ import {
   updateBoss,
   updateCheckbox,
 } from '../api/access';
+import { FiltersPanel } from '../components/FiltersPanel';
 import { TableHeaderText } from '../components/TableHeaderText';
+import { TableSkeleton } from '../components/TableSkeleton';
+import { UserSearchInput } from '../components/UserSearchInput';
+import { parsePositiveInteger } from '../routing';
 import {
   buildDepartmentRows,
   filterAccessesByGroup,
@@ -21,7 +25,7 @@ import {
   normalizeUsers,
 } from '../utils/normalizers';
 
-const DEFAULT_GROUP_ID = '1';
+const DEFAULT_GROUP_ID = 1;
 const EMPLOYEE_COLUMN_WIDTH = 170;
 const ACCESS_COLUMN_WIDTH = 82;
 const BOSS_COLUMN_WIDTH = 190;
@@ -93,29 +97,7 @@ const normalizeBossOptions = (data) => {
     .sort((a, b) => a.label.localeCompare(b.label, 'ru') || a.value - b.value);
 };
 
-const UserSearchInput = memo(function UserSearchInput({ onDebouncedChange }) {
-  const [value, setValue] = useState('');
-
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      onDebouncedChange(value);
-    }, 350);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [onDebouncedChange, value]);
-
-  return (
-    <Input
-      allowClear
-      prefix={<SearchOutlined />}
-      placeholder="Пользователь"
-      value={value}
-      onChange={(event) => setValue(event.target.value)}
-    />
-  );
-});
-
-export function AccessPage({ session }) {
+export function AccessPage({ session, searchParams, updateSearch }) {
   const companies = useMemo(
     () =>
       [...(session?.companies || [])]
@@ -124,9 +106,12 @@ export function AccessPage({ session }) {
     [session?.companies],
   );
   const activeCompany = session?.user?.active_company ?? session?.user?.id_company ?? companies[0]?.id;
-  const [companyId, setCompanyId] = useState(activeCompany);
-  const [group, setGroup] = useState(DEFAULT_GROUP_ID);
+  const requestedCompanyId = parsePositiveInteger(searchParams.get('company'));
+  const companyId = companies.find((company) => Number(company.id) === requestedCompanyId)?.id ?? activeCompany;
   const [accessGroups, setAccessGroups] = useState([]);
+  const requestedGroup = parsePositiveInteger(searchParams.get('group')) ?? DEFAULT_GROUP_ID;
+  const selectedGroup = accessGroups.find((item) => item.id === requestedGroup) ?? accessGroups[0];
+  const group = selectedGroup?.id ?? requestedGroup;
   const [departments, setDepartments] = useState([]);
   const [groupsLoaded, setGroupsLoaded] = useState(false);
   const [infoData, setInfoData] = useState(null);
@@ -139,29 +124,19 @@ export function AccessPage({ session }) {
   const [bossesLoading, setBossesLoading] = useState(false);
   const [bossByUser, setBossByUser] = useState({});
   const [error, setError] = useState('');
-  const [filtersVisible, setFiltersVisible] = useState(false);
-  const [userSearch, setUserSearch] = useState('');
-  const [departmentFilter, setDepartmentFilter] = useState(null);
-  const [showAllUsers, setShowAllUsers] = useState(false);
-  const [showFiredUsers, setShowFiredUsers] = useState(false);
+  const userSearch = searchParams.get('q') ?? '';
+  const departmentFilter = parsePositiveInteger(searchParams.get('department'));
+  const showAllUsers = searchParams.get('all') === '1';
+  const showFiredUsers = searchParams.get('fired') === '1';
+  const [filtersVisible, setFiltersVisible] = useState(
+    () => Boolean(userSearch || departmentFilter || showAllUsers || showFiredUsers),
+  );
   const [filtersUpdating, startFilterTransition] = useTransition();
 
-  const handleUserVisibilityChange = (setVisibility, checked) => {
-    startFilterTransition(async () => {
-      // Let the browser paint the loader before rendering the updated matrix.
-      await new Promise((resolve) => {
-        window.requestAnimationFrame(() => window.requestAnimationFrame(resolve));
-      });
-      startFilterTransition(() => setVisibility(checked));
-    });
+  const handleUserVisibilityChange = (key, checked) => {
+    startFilterTransition(() => updateSearch({ [key]: checked ? '1' : undefined }));
   };
   const hoverStyleRef = useRef(null);
-  const hasActiveFilters = Boolean(userSearch.trim() || departmentFilter);
-  const isFilterButtonActive = filtersVisible || hasActiveFilters;
-
-  useEffect(() => {
-    setCompanyId(activeCompany);
-  }, [activeCompany]);
 
   useEffect(() => {
     let ignore = false;
@@ -173,17 +148,11 @@ export function AccessPage({ session }) {
           fetchAccessGroups(),
           fetchDepartments(),
         ]);
-        const normalizedGroups = normalizeAccessGroups(groupsData);
-
         if (ignore) return;
 
         setInfoData(info);
-        setAccessGroups(normalizedGroups);
+        setAccessGroups(normalizeAccessGroups(groupsData));
         setDepartments(normalizeDepartments(departmentsData));
-        setGroup((currentGroup) => {
-          const hasCurrentGroup = normalizedGroups.some((item) => String(item.id) === String(currentGroup));
-          return hasCurrentGroup || !normalizedGroups.length ? String(currentGroup) : String(normalizedGroups[0].id);
-        });
         setGroupsLoaded(true);
       } catch (err) {
         if (!ignore) setError(err.message || 'Не удалось загрузить справочники доступов');
@@ -222,10 +191,6 @@ export function AccessPage({ session }) {
     };
   }, [companyId, group, groupsLoaded]);
 
-  const selectedGroup = useMemo(
-    () => accessGroups.find((item) => String(item.id) === String(group)),
-    [accessGroups, group],
-  );
   const isSkudSelected = isSkudGroup(selectedGroup);
 
   useEffect(() => {
@@ -299,8 +264,8 @@ export function AccessPage({ session }) {
     }
 
     hoverStyleRef.current.textContent = `
-      .access-matrix .ant-table-thead > tr > th[data-access-id="${accessId}"] {
-        background: #6686a7 !important;
+      html[data-page-theme="main"] .access-matrix .ant-table-thead > tr > th[data-access-id="${accessId}"] {
+        background: var(--ui-heading-divider);
       }
     `;
   };
@@ -381,6 +346,7 @@ export function AccessPage({ session }) {
       title: 'Сотрудник',
       dataIndex: 'fullName',
       key: 'fullName',
+      className: 'employee-column',
       fixed: 'left',
       width: employeeColumnWidth,
       render: (name, record) => {
@@ -512,113 +478,108 @@ export function AccessPage({ session }) {
   return (
     <>
       <style ref={hoverStyleRef} />
-      <div className="access-layout">
-        <aside className={`access-sider ${filtersVisible ? '' : 'access-sider_hidden'}`}>
-          <Space direction="vertical" size={12} className="access-filters">
-            <div className="access-filters__title">
-              <FilterOutlined />
-              <span>Фильтры</span>
-            </div>
-            <UserSearchInput onDebouncedChange={setUserSearch} />
-            <Select
-              allowClear
-              showSearch
-              placeholder="Отдел"
-              value={departmentFilter}
-              onChange={setDepartmentFilter}
-              optionFilterProp="label"
-              options={departments.map((department) => ({
-                value: department.id,
-                label: department.name,
-              }))}
+      <section className="access-workspace">
+        <div className="access-toolbar ui-pagebar ui-pagebar--filters">
+          <div className="access-toolbar__left">
+            <Button
+              type={filtersVisible ? 'primary' : 'default'}
+              size="small"
+              icon={<FilterOutlined />}
+              onClick={() => setFiltersVisible((current) => !current)}
+              title={filtersVisible ? 'Скрыть фильтры' : 'Показать фильтры'}
+              aria-label="Фильтры"
+              aria-expanded={filtersVisible}
+              aria-controls="access-filters"
+              className="access-filter-button"
+            >
+              <span className="access-filter-button__label">Фильтры</span>
+            </Button>
+            <Radio.Group
+              aria-label="Группы прав"
+              optionType="button"
+              value={String(group)}
+              onChange={(event) => updateSearch({ group: event.target.value })}
+              options={accessGroups.map((item) => ({ value: String(item.id), label: item.label }))}
+              className="access-group-radio"
             />
-          </Space>
-        </aside>
-
-        <Space direction="vertical" size={18} className="page access-page">
-          <div className="access-toolbar">
-            <div className="access-toolbar__left">
-              <Button
-                type={isFilterButtonActive ? 'primary' : 'default'}
-                size="small"
-                icon={<FilterOutlined />}
-                onClick={() => setFiltersVisible((current) => !current)}
-                title={filtersVisible ? 'Скрыть фильтры' : 'Показать фильтры'}
-                className={`access-filter-button ${isFilterButtonActive ? 'access-filter-button_active' : ''}`}
-              >
-                Фильтры
-              </Button>
-              <div className="access-toolbar__divider" />
-              <Radio.Group
-                optionType="button"
-                buttonStyle="solid"
-                value={String(group)}
-                onChange={(event) => setGroup(event.target.value)}
-                options={accessGroups.map((item) => ({ value: String(item.id), label: item.label }))}
-                className="access-group-radio"
-              />
+          </div>
+          <Select
+            value={companyId}
+            onChange={(value) => updateSearch({ company: value })}
+            className={`company-select ${companyColor ? 'company-select_colored' : ''}`}
+            style={{
+              '--company-color': companyColor,
+              '--company-text-color': companyTextColor,
+            }}
+            options={companies.map((company) => ({
+              value: company.id,
+              label: company.name,
+            }))}
+          />
+        </div>
+        {error ? <Alert type="error" showIcon message={error} /> : null}
+        <div className="access-layout">
+          <FiltersPanel id="access-filters" title="Фильтры доступов" visible={filtersVisible}>
+            <div className="access-filter-field">
+              <label htmlFor="access-filter-user">Пользователь</label>
+              <UserSearchInput id="access-filter-user" value={userSearch} updateSearch={updateSearch} />
             </div>
-            <div className="access-toolbar__company">
-              <Checkbox
-                checked={showAllUsers}
-                disabled={filtersUpdating}
-                onChange={(event) => handleUserVisibilityChange(setShowAllUsers, event.target.checked)}
-                className="company-show-all"
-              >
-                Показать всех
-              </Checkbox>
-              <Checkbox
-                checked={showFiredUsers}
-                disabled={filtersUpdating}
-                onChange={(event) => handleUserVisibilityChange(setShowFiredUsers, event.target.checked)}
-                className="company-show-all"
-              >
-                Показать уволенных
-              </Checkbox>
+            <div className="access-filter-field">
+              <label htmlFor="access-filter-department">Отдел</label>
               <Select
-                value={companyId}
-                onChange={setCompanyId}
-                size="small"
-                className={`company-select ${companyColor ? 'company-select_colored' : ''}`}
-                style={{
-                  '--company-color': companyColor,
-                  '--company-text-color': companyTextColor,
-                }}
-                options={companies.map((company) => ({
-                  value: company.id,
-                  label: company.name,
+                id="access-filter-department"
+                allowClear
+                showSearch
+                placeholder="Отдел, где работает сотрудник"
+                value={departmentFilter}
+                onChange={(value) => updateSearch({ department: value })}
+                optionFilterProp="label"
+                options={departments.map((department) => ({
+                  value: department.id,
+                  label: department.name,
                 }))}
               />
             </div>
+            <Checkbox
+              checked={showAllUsers}
+              disabled={filtersUpdating}
+              onChange={(event) => handleUserVisibilityChange('all', event.target.checked)}
+            >
+              Показать всех
+            </Checkbox>
+            <Checkbox
+              checked={showFiredUsers}
+              disabled={filtersUpdating}
+              onChange={(event) => handleUserVisibilityChange('fired', event.target.checked)}
+            >
+              Показать уволенных
+            </Checkbox>
+          </FiltersPanel>
+          <div className="page-table">
+            {loading || (!groupsLoaded && !error) ? (
+              <TableSkeleton columns={columns} matrixColumnWidth={ACCESS_COLUMN_WIDTH} />
+            ) : (
+              <Table
+                bordered
+                size="small"
+                className="access-matrix"
+                loading={{ spinning: filtersUpdating, tip: 'Обновление списка…' }}
+                style={{ '--access-table-width': `${tableWidth}px` }}
+                rowKey={(record) => record.id}
+                columns={columns}
+                dataSource={tableRows}
+                rowClassName={(record) => (record.rowType === 'department' ? 'department-row' : '')}
+                scroll={{ x: tableWidth, y: '100%' }}
+                tableLayout="fixed"
+                pagination={false}
+                locale={{
+                  emptyText: 'Нет данных для выбранной компании и группы',
+                }}
+              />
+            )}
           </div>
-
-          {error ? <Alert type="error" showIcon message={error} /> : null}
-
-          {loading || !groupsLoaded ? (
-            <div className="access-table-skeleton">
-              <Skeleton active title={false} paragraph={{ rows: 14, width: '100%' }} />
-            </div>
-          ) : (
-            <Table
-              bordered
-              size="small"
-              className="access-matrix"
-              loading={{ spinning: filtersUpdating, tip: 'Обновление списка…' }}
-              style={{ '--access-table-width': `${tableWidth}px` }}
-              rowKey={(record) => record.id}
-              columns={columns}
-              dataSource={tableRows}
-              rowClassName={(record) => (record.rowType === 'department' ? 'department-row' : '')}
-              scroll={{ x: tableWidth, y: '100%' }}
-              tableLayout="fixed"
-              pagination={false}
-              locale={{
-                emptyText: 'Нет данных для выбранной компании и группы',
-              }}
-            />
-          )}
-        </Space>
-      </div>
+        </div>
+      </section>
     </>
   );
 }

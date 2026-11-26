@@ -1,8 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Form, Input, InputNumber, Modal, Pagination, Select, Space, Table, Tag, message } from 'antd';
+import { Button, Form, Input, InputNumber, Modal, Pagination, Select, Table, Tag, message } from 'antd';
 import { EditOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { createAccess, fetchAccessGroups, fetchAccessInfo, updateAccess } from '../api/access';
+import { TableSkeleton } from '../components/TableSkeleton';
+import { parsePositiveInteger } from '../routing';
 import { normalizeAccessGroups, normalizeAccesses } from '../utils/normalizers';
+
+const DEFAULT_PAGE_SIZE = 50;
+const PAGE_SIZES = [10, 20, 50, 100];
+const SORT_FIELDS = ['id', 'accessname', 'name', 'label', 'accessgroup', 'position'];
+const TABLE_MIN_WIDTH = 1080;
 
 const getDefaultAccess = (groups) => ({
   name: '',
@@ -14,18 +21,25 @@ const getDefaultAccess = (groups) => ({
 
 const compareText = (a, b) => String(a || '').localeCompare(String(b || ''), 'ru');
 
-export function SettingsPage() {
+export function SettingsPage({ searchParams, updateSearch }) {
   const [form] = Form.useForm();
   const [infoData, setInfoData] = useState(null);
   const [groups, setGroups] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const [tableFilters, setTableFilters] = useState({});
-  const [sorterState, setSorterState] = useState({ field: 'id', order: 'ascend' });
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 50 });
+  const search = searchParams.get('q') ?? '';
+  const groupFilter = useMemo(
+    () => searchParams.getAll('group').map(parsePositiveInteger).filter((value) => value !== undefined),
+    [searchParams],
+  );
+  const requestedSort = searchParams.get('sort');
+  const sortField = SORT_FIELDS.includes(requestedSort) ? requestedSort : 'id';
+  const sortDirection = searchParams.get('order') === 'descend' ? 'descend' : 'ascend';
+  const requestedPage = parsePositiveInteger(searchParams.get('page')) ?? 1;
+  const requestedSize = parsePositiveInteger(searchParams.get('per_page'));
+  const pageSize = PAGE_SIZES.includes(requestedSize) ? requestedSize : DEFAULT_PAGE_SIZE;
 
   const loadAccesses = async () => {
     setLoading(true);
@@ -49,8 +63,6 @@ export function SettingsPage() {
 
   const preparedAccesses = useMemo(() => {
     const query = search.trim().toLowerCase();
-    const groupFilter = tableFilters.accessgroup || [];
-
     const filtered = accesses.filter((access) => {
       const groupLabel = groupById.get(Number(access.accessgroup))?.label || '';
       const matchesSearch =
@@ -66,37 +78,29 @@ export function SettingsPage() {
         ]
           .some((value) => String(value ?? '').toLowerCase().includes(query));
       const matchesGroup =
-        !groupFilter.length || groupFilter.some((value) => Number(value) === Number(access.accessgroup));
+        !groupFilter.length || groupFilter.includes(Number(access.accessgroup));
 
       return matchesSearch && matchesGroup;
     });
 
     const sorted = [...filtered];
-    const { field, order } = sorterState;
+    const direction = sortDirection === 'ascend' ? 1 : -1;
+    sorted.sort((a, b) => {
+      if (sortField === 'id' || sortField === 'position' || sortField === 'accessgroup') {
+        return (Number(a[sortField] ?? 0) - Number(b[sortField] ?? 0)) * direction;
+      }
 
-    if (field && order) {
-      const direction = order === 'ascend' ? 1 : -1;
-
-      sorted.sort((a, b) => {
-        if (field === 'id' || field === 'position' || field === 'accessgroup') {
-          return (Number(a[field] ?? 0) - Number(b[field] ?? 0)) * direction;
-        }
-
-        if (field === 'groupLabel') {
-          return compareText(groupById.get(Number(a.accessgroup))?.label, groupById.get(Number(b.accessgroup))?.label) * direction;
-        }
-
-        return compareText(a[field], b[field]) * direction;
-      });
-    }
+      return compareText(a[sortField], b[sortField]) * direction;
+    });
 
     return sorted;
-  }, [accesses, groupById, search, sorterState, tableFilters]);
+  }, [accesses, groupById, groupFilter, search, sortDirection, sortField]);
 
+  const currentPage = Math.min(requestedPage, Math.max(1, Math.ceil(preparedAccesses.length / pageSize)));
   const pagedAccesses = useMemo(() => {
-    const start = (pagination.current - 1) * pagination.pageSize;
-    return preparedAccesses.slice(start, start + pagination.pageSize);
-  }, [pagination, preparedAccesses]);
+    const start = (currentPage - 1) * pageSize;
+    return preparedAccesses.slice(start, start + pageSize);
+  }, [currentPage, pageSize, preparedAccesses]);
 
   const openCreate = () => {
     setEditing(null);
@@ -143,20 +147,19 @@ export function SettingsPage() {
   const handleTableChange = (_, filters, sorter) => {
     const activeSorter = Array.isArray(sorter) ? sorter[0] : sorter;
 
-    setTableFilters(filters);
-    setSorterState({
-      field: activeSorter?.field || 'id',
-      order: activeSorter?.order || 'ascend',
+    updateSearch({
+      group: filters.accessgroup,
+      sort: activeSorter?.field === 'id' ? undefined : activeSorter?.field,
+      order: activeSorter?.order === 'descend' ? 'descend' : undefined,
+      page: undefined,
     });
-    setPagination((current) => ({ ...current, current: 1 }));
   };
 
   const handleSearchChange = (event) => {
-    setSearch(event.target.value);
-    setPagination((current) => ({ ...current, current: 1 }));
+    updateSearch({ q: event.target.value, page: undefined }, { replace: true });
   };
 
-  const sortOrder = (field) => (sorterState.field === field ? sorterState.order : null);
+  const sortOrder = (field) => (sortField === field ? sortDirection : null);
 
   const columns = [
     {
@@ -196,7 +199,7 @@ export function SettingsPage() {
       sortOrder: sortOrder('accessgroup'),
       render: (value) => <Tag>{groupById.get(Number(value))?.label || value || 'Без группы'}</Tag>,
       filters: groups.map((group) => ({ text: group.label, value: group.id })),
-      filteredValue: tableFilters.accessgroup || null,
+      filteredValue: groupFilter.length ? groupFilter : null,
     },
     {
       title: 'Позиция',
@@ -211,23 +214,15 @@ export function SettingsPage() {
       fixed: 'right',
       width: 72,
       render: (_, record) => (
-        <Button icon={<EditOutlined />} onClick={() => openEdit(record)} title="Редактировать" />
+        <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(record)} title="Редактировать" />
       ),
     },
-  ];
+  ].map((column) => ({ ellipsis: true, ...column }));
 
   return (
-    <Space direction="vertical" size={18} className="page settings-page">
-      <div className="settings-toolbar">
-        <Pagination
-          size="small"
-          current={pagination.current}
-          pageSize={pagination.pageSize}
-          total={preparedAccesses.length}
-          showSizeChanger
-          onChange={(current, pageSize) => setPagination({ current, pageSize })}
-        />
-        <Space className="settings-toolbar__actions">
+    <section className="access-workspace">
+      <div className="settings-toolbar ui-pagebar ui-pagebar--filters">
+        <div className="settings-toolbar__actions">
           <Input
             allowClear
             prefix={<SearchOutlined />}
@@ -240,22 +235,48 @@ export function SettingsPage() {
           <Button type="primary" size="small" icon={<PlusOutlined />} onClick={openCreate}>
             Добавить
           </Button>
-        </Space>
+        </div>
       </div>
 
-      <Table
-        bordered
-        size="small"
-        rowKey="id"
-        loading={loading}
-        columns={columns}
-        dataSource={pagedAccesses}
-        onChange={handleTableChange}
-        scroll={{ x: 1080, y: 'calc(100vh - 168px)' }}
-        pagination={false}
-      />
+      <div className="table-with-pagination">
+        <div className="page-table">
+          {loading ? (
+            <TableSkeleton columns={columns} minWidth={TABLE_MIN_WIDTH} />
+          ) : (
+            <Table
+              bordered
+              size="small"
+              rowKey="id"
+              columns={columns}
+              dataSource={pagedAccesses}
+              onChange={handleTableChange}
+              scroll={{ x: TABLE_MIN_WIDTH, y: '100%' }}
+              pagination={false}
+            />
+          )}
+        </div>
+        <nav className="ui-pagination" aria-label="Страницы настроек">
+          <Pagination
+            align="end"
+            current={currentPage}
+            pageSize={pageSize}
+            total={preparedAccesses.length}
+            showQuickJumper
+            showSizeChanger
+            pageSizeOptions={PAGE_SIZES}
+            showTotal={(total) => `Всего: ${total}`}
+            disabled={loading}
+            onChange={(nextPage, nextSize) => updateSearch({
+              page: nextPage > 1 ? nextPage : undefined,
+              per_page: nextSize === DEFAULT_PAGE_SIZE ? undefined : nextSize,
+            })}
+          />
+        </nav>
+      </div>
 
       <Modal
+        className="access-dialog"
+        centered
         title={editing ? 'Редактирование доступа' : 'Новый доступ'}
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
@@ -291,6 +312,6 @@ export function SettingsPage() {
           </Form.Item>
         </Form>
       </Modal>
-    </Space>
+    </section>
   );
 }

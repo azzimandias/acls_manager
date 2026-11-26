@@ -6,11 +6,13 @@ import { AccessPage } from './pages/AccessPage';
 import { CompaniesPage } from './pages/CompaniesPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { HistoryPage } from './pages/HistoryPage';
+import { useAppLocation } from './routing';
 
 const { Content } = Layout;
 
 export default function App() {
-  const [page, setPage] = useState('access');
+  const { page, searchParams, navigate, updateSearch } = useAppLocation();
+  const routeProps = { searchParams, updateSearch };
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -37,7 +39,7 @@ export default function App() {
 
   return (
     <Layout className="app-shell">
-      <AppTopbar currentPage={page} onPageChange={setPage} user={session?.user} />
+      <AppTopbar currentPage={page} onPageChange={navigate} user={session?.user} />
       <Content className="app-content">
         {loading ? (
           <div className="center-state">
@@ -46,13 +48,13 @@ export default function App() {
         ) : error ? (
           <Alert type="error" showIcon message="Ошибка загрузки" description={error} />
         ) : page === 'settings' ? (
-          <SettingsPage />
+          <SettingsPage {...routeProps} />
         ) : page === 'history' ? (
-          <HistoryPage />
+          <HistoryPage {...routeProps} />
         ) : page === 'companies' ? (
-          <CompaniesPage />
+          <CompaniesPage {...routeProps} />
         ) : (
-          <AccessPage session={session} />
+          <AccessPage session={session} {...routeProps} />
         )}
       </Content>
     </Layout>
